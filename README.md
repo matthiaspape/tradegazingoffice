@@ -8,6 +8,8 @@ Repository: [matthiaspape/tradegazingoffice](https://github.com/matthiaspape/tra
 
 [Lokales Projektmanagement](http://127.0.0.1:43120/) mit Mission Log, Context Core, [Bug Board](http://127.0.0.1:43120/bugs) und Legal & Lizenzen. Aus dem Aunerio-Desk übernommen, mit dem Tradegazing-Bug-Board und den originalen Tradegazing-Logos ergänzt. Eigene SQLite-Datenbank und Zugangsschlüssel; keine übernommenen Missions-/Researchbestände.
 
+Diese vier Bereiche liegen als Untereinträge unter **Projektmanagement**. Unter **Controlling** liegt [Fleet Control](http://127.0.0.1:43120/controlling/fleet-control), zunächst als Dummy-Seite.
+
 Start, MCP/CLI, Datenablage und Prüfbelege: [TradegazingOfficeDesk/README.md](TradegazingOfficeDesk/README.md). Auf diesem Mac: `cd TradegazingOfficeDesk` und `./desk launch`; die Abhängigkeiten, Einrichtung und der Build müssen vorhanden sein. Die lokale Projektmanagement-Laufzeit ist Node.js 24+ mit React/vinext und SQLite.
 
 Arbeitsweise seit Nutzerauftrag vom 04.11.2026: Neue Aufgaben erhalten automatisch eine thematische Mission; abgeschlossene Zwischenstände werden zeitnah committet. Nach fachlichem Abschluss folgen geordnetes Cleanup, finaler Commit/Push und administrativer Missionsabschluss. Details und Grenzen stehen in [AGENTS.md](AGENTS.md) und im [Missionsworkflow](TradegazingOfficeDesk/docs/MISSION_WORKFLOW.md).

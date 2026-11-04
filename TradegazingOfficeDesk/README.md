@@ -4,6 +4,8 @@ Lokales Projektmanagement für Tradegazing Office: **Mission Log, Context Core, 
 
 [Desk](http://127.0.0.1:43120/) · [Wissenskern](http://127.0.0.1:43120/context) · [Bug Board](http://127.0.0.1:43120/bugs) · [Legal](http://127.0.0.1:43120/legal)
 
+Die Navigation gliedert sich in **Projektmanagement** (Mission Log, Context Core, Bug Board, Legal & Lizenzen) und **Controlling** ([Fleet Control](http://127.0.0.1:43120/controlling/fleet-control)). Fleet Control ist vorerst eine reine Dummy-Seite. Die bestehende Trading-Journal-Designstudie wird dadurch nicht angebunden.
+
 ## Start
 
 Node.js 24+ und npm bei einer frischen Installation:

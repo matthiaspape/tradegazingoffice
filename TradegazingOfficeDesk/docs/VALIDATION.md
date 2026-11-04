@@ -28,3 +28,13 @@ Unabhängiges Dreamteam-Review: [Entscheidung, Paketbindung und offene Befunde](
 ## Git-Übernahme
 
 OFFICE-BUG-0012: Der erste Git-Stand schloss die bereits getestete und im Reviewpaket enthaltene Route `app/api/missions/logs/route.ts` aufgrund der bestehenden Regel `logs/` aus. Vor Übernahme korrigiert: gezielte Ausnahme nur für diesen API-Quellpfad. Anwendungscode und vorhandene Tests/Review bleiben unverändert; private Logs bleiben ausgeschlossen. Der notwendige Packaging-Abgleich verwendet Git-Index und den bereits geprüften Routeninhalt, keine neue Gesamtqualifikation.
+
+## Gruppierte Navigation und Fleet-Control-Dummy · Mission 3
+
+Auftrag vom 04.11.2026: Projektmanagement mit vier Untereinträgen; Controlling mit Fleet Control, zunächst ausschließlich Dummy. Änderung betrifft Navigation und eine Platzhalterseite ohne Daten-/Auth-/Schreiblogik.
+
+- Typprüfung und Produktionsbuild bestanden; Route `/controlling/fleet-control` enthalten.
+- Zwei vorhandene Renderingtests bestanden. Der bestehende vollständige Browser-Smoke wurde an das aufklappbare Projektmanagement-Menü angepasst; sein gesamter Schreibablauf wurde für diese reine Navigationsänderung nicht erneut durchgeführt.
+- Gezielter tatsächlicher Browserdurchlauf: alle vier Projektmanagement-Links und Fleet Control erreichbar, richtige aktive Gruppe, Öffnen per Enter und Schließen per Escape, Schließen bei Außenklick, höchstens eine Gruppe offen.
+- Auf 390/320 Pixeln beide Untermenüs sichtbar und innerhalb der Bildschirmgrenzen; keine äußere horizontale Überbreite. Desktopansicht auf 1280 Pixeln zusätzlich visuell geprüft; keine JavaScript-Laufzeitfehler. [Bericht](navigation-checks.json), [Platzhalteransicht](screenshots/fleet-control-placeholder.png).
+- Keine neue unabhängige Reviewrunde für die begrenzte UI-Änderung. Historische Implementierungs-/Konzeptreviewentscheidungen und offene Befunde bleiben erhalten.

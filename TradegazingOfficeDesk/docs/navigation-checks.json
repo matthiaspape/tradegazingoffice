@@ -1,0 +1,28 @@
+{
+  "projectmanagement": [
+    "Mission Log",
+    "Context Core",
+    "Bug Board",
+    "Legal & Lizenzen"
+  ],
+  "controlling": [
+    "Fleet Control"
+  ],
+  "fleet_control": "dummy only",
+  "routes_checked": [
+    "/",
+    "/context",
+    "/bugs",
+    "/legal",
+    "/controlling/fleet-control"
+  ],
+  "widths": [
+    1280,
+    390,
+    320
+  ],
+  "keyboard_enter_escape": true,
+  "outside_click_closes": true,
+  "single_open_group": true,
+  "page_errors": []
+}

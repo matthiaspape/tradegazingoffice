@@ -38,6 +38,7 @@ async def main():
         await page.get_by_label('Status', exact=True).select_option('IN_PROGRESS')
         await page.get_by_role('button', name='Mission speichern', exact=True).click()
         await expect(page.locator('.notice')).to_contain_text('Mission gespeichert')
+        await page.get_by_role('navigation', name='Projektbereiche').locator('summary').filter(has_text='Projektmanagement').click()
         await page.get_by_role('link', name='Bug Board', exact=True).click()
         await expect(page.get_by_role('heading', name='Keine Bugs in dieser Auswahl')).to_be_visible()
         await page.get_by_role('button', name='+ Bug erfassen', exact=True).click()
