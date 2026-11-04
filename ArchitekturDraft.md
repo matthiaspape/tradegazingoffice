@@ -720,6 +720,12 @@ Jede Anbieterintegration sollte später einen kurzen Fähigkeitsnachweis mit Pr�
 
 ## 18. Quellen und Aktualisierung
 
+### Ergänzung vom 04.11.2026: lokales Projektmanagement
+
+`TradegazingOfficeDesk/` ist eine eigenständige lokale Projektmanagement-Anwendung auf Basis des Aunerio-Desks: Mission Log, Context Core/Legal und das aus Tradegazing übernommene Bug Board. Laufzeit: Node.js 24+, React/vinext, `node:sqlite`. Webseite und REST-/MCP-/CLI-Wege verwenden dieselbe Office-Datenbank und Validierung. Port 43120, eigener Cookie-/MCP-Namensraum, eigene Daten und Schlüssel in `.office-desk-data/` beziehungsweise `TRADEGAZING_OFFICE_DESK_HOME`. Setup ist explizit; Start und Lesezugriffe migrieren oder befüllen nichts. Das Original-Tradegazing-Logo und Teal/Navy bilden die Markenidentität. Herkunft, tatsächliche Tests und Reviewgrenzen stehen in [Adaption](TradegazingOfficeDesk/docs/ADAPTATION.md) und [Prüfung](TradegazingOfficeDesk/docs/VALIDATION.md).
+
+Das Projektmanagement organisiert Entwicklungsarbeit und Befunde; es hat keine Bank-, Steuer-, Mail-, EA- oder Researchausführungsrechte. Die Laufzeitentscheidung gilt nur dafür. Die folgende Fleet-Control-Desk-Designstudie bleibt ein separater Entwurf ohne MT5-Datenanbindung. Historische Abschnitte zur noch nicht implementierten Buchhaltung bleiben in ihrem fachlichen Umfang unverändert.
+
 ### Ergänzung vom 04.11.2026: Fleet Control Desk
 
 Auf ausdrücklichen Nutzerauftrag ergänzt [Fleet Control Desk](docs/FleetControlDeskKonzept.md) das Zielbild um ein privates Trading Journal für Flotten-EAs und deren Strategievarianten. Priorität haben Mehrflottenübersicht, zurechenbare Nettoergebnisse, beobachteter Drawdown, gebundene Poolressourcen, Varianten-/Revisionsdetails sowie Betrieb und Datenqualität. Die technische Grundlage aus dem Tradegazing-Projekt wird als lesender Datenvertrag berücksichtigt; eine vollständig implementierte neue Monitoring-API ist damit nicht nachgewiesen. Der vorhandene Fünf-Minuten-Takt bleibt bestehen. Der grafische Draft ist eine klickbare Designstudie mit fiktiven Daten und liegt mit einer HTML-Vorschau in `design/fleet-control-desk/`; Collector, Login, API und Hosting sind nicht eingerichtet. Der [Reviewnachweis](docs/FleetControlDeskReview.md) hält die historische Dreamteam-Entscheidung und die danach eingearbeiteten Präzisierungen ohne neue Abnahme fest. Der Buchhaltungsentwurf und dessen Freigabegrenzen bleiben fachlich eigenständig.

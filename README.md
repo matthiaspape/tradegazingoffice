@@ -4,6 +4,14 @@ Backoffice und Buchhaltungsintegration für das geplante Prop-Trading-Einzelgewe
 
 Repository: [matthiaspape/tradegazingoffice](https://github.com/matthiaspape/tradegazingoffice) · Standardbranch: `main`.
 
+## Tradegazing Office Desk
+
+[Lokales Projektmanagement](http://127.0.0.1:43120/) mit Mission Log, Context Core, [Bug Board](http://127.0.0.1:43120/bugs) und Legal & Lizenzen. Aus dem Aunerio-Desk übernommen, mit dem Tradegazing-Bug-Board und den originalen Tradegazing-Logos ergänzt. Eigene SQLite-Datenbank und Zugangsschlüssel; keine übernommenen Missions-/Researchbestände.
+
+Start, MCP/CLI, Datenablage und Prüfbelege: [TradegazingOfficeDesk/README.md](TradegazingOfficeDesk/README.md). Auf diesem Mac: `cd TradegazingOfficeDesk` und `./desk launch`; die Abhängigkeiten, Einrichtung und der Build müssen vorhanden sein. Die lokale Projektmanagement-Laufzeit ist Node.js 24+ mit React/vinext und SQLite.
+
+![Tradegazing Office Desk – Projektmanagement mit Originalmarke](TradegazingOfficeDesk/docs/screenshots/mission-log-dark.png)
+
 ## Fleet Control Desk
 
 Erster Konzept- und Designstand vom 04.11.2026 für ein privates Trading Journal zur Kontrolle von Flotten-EAs und ihren Strategievarianten. Die klickbare Designstudie zeigt Flottenübersicht, Varianten, Risiko, Journal, Analyse und Betriebsdaten in Space-Glass-Optik. Alle Handelsdaten sind fiktiv.
@@ -16,7 +24,7 @@ Erster Konzept- und Designstand vom 04.11.2026 für ein privates Trading Journal
 
 Die vorhandenen 39 Browserprüfungen und das unabhängige Dreamteam-Konzeptreview sind dokumentiert. Die historische Reviewentscheidung ist `CHANGES_REQUESTED`; nachfolgende Präzisierungen sind keine neue unabhängige Abnahme. Hosting, Collector und Liveanbindung sind noch nicht eingerichtet. Der Entwurf und die Projektgrundlagen wurden aus dem bisherigen Arbeitsordner übernommen; dessen Git-Historie gehört nicht zu diesem neuen Repository.
 
-Der aktuelle Stand ist ein Architekturentwurf. Konten, produktive Integrationen, Steuerregeln und MCP-Implementierungen sind noch nicht als eingerichtet oder freigegeben nachgewiesen.
+Backoffice und Trading Journal bleiben Architektur-/Designentwürfe. Das lokale Projektmanagement ist implementiert; daraus folgt keine Einrichtung von Bank-, Buchhaltungs-, Mail- oder MT5-Integrationen und keine Freigabe steuerlicher Regeln.
 
 ## Einstieg
 
@@ -53,4 +61,4 @@ Als spätere Ausbaustufe ist ein privates Dashboard gewünscht. Für das möglic
 
 Dieses Repository enthält Quellcode, Dokumentation und bereinigte Beispiele. Zugangsdaten, echte Kontoauszüge, Rechnungen, persönliche Verträge und Laufzeitdaten werden in einer getrennten geschützten Ablage verwahrt. Die `.gitignore` unterstützt diese Trennung, ersetzt aber keine Prüfung vor jedem Commit.
 
-Backoffice-Grundlagen: 03.10.2026; Fleet-Control-Desk-Konzept ergänzt am 04.11.2026. Ausführliche Quellen und offene Punkte stehen in den verlinkten Entwürfen. Es gibt weiterhin keine produktive Integration und keine festgelegte Produktionslaufzeit.
+Backoffice-Grundlagen: 03.10.2026; Fleet-Control-Desk-Konzept und lokales Office-Projektmanagement ergänzt am 04.11.2026. Ausführliche Quellen und offene Punkte stehen in den verlinkten Unterlagen. Eine produktive Backoffice-/Tradinganbindung und deren Produktionslaufzeit sind weiterhin offen.

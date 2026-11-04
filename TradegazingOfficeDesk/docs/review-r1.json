@@ -1,0 +1,136 @@
+{
+  "review_id": "a47ba44c87ff486aa1c446d64b12f9e0",
+  "project": "Tradegazing Office Desk",
+  "round": 1,
+  "developer": "codex",
+  "reviewer": "claude",
+  "submission_sha256": "b10d77fae4045cd81dce3b35ebb6765f18b3a41804aff35bc3c34a2b7e138332",
+  "decision": "CHANGES_REQUESTED",
+  "approval_scope": "Submitted packet only; no claim about unsubmitted code or independently executed tests",
+  "review": {
+    "criteria_results": [
+      {
+        "criterion_id": "C1",
+        "evidence": "ops/config.mjs nutzt TRADEGAZING_OFFICE_DESK_HOME, .office-desk-data und Port 43120; ops/auth.mjs den Cookie tradegazing-office-desk-session und einen eigenen Schlüssel in local-auth.json mit Dateirechteprüfung. checkBoundary prüft Origin, Host und Sec-Fetch-Site. setup.mjs erzeugt leere Daten ohne Importpfad. Die 16 Werkzeuge enthalten keine Handels-, Provider- oder Prozesssteuerung. Einschränkungen: .gitignore nicht eingereicht, Restbegriff game/ (OFFICE-R1-CONTEXT-TOOL-PATHS), Grenze der Sitzungsausgabe (OFFICE-R1-SESSION-BOOTSTRAP).",
+        "passed": true
+      },
+      {
+        "criterion_id": "C2",
+        "evidence": "Korrekt umgesetzt: writeOperation mit BEGIN IMMEDIATE, Request-Key-Replay vor Revisionsprüfung, 409 bei geändertem Inhalt, Bug, Vorkommen und Ereignis in einer Transaktion, latestOccurrences je Mission/Run/Stufe, Blockerbelege in validateOccurrence. Nicht korrekt: Duplikate auf geschlossene Originale umgehen Wiederöffnung und Blockeranzeige (OFFICE-R1-DUP-CLOSED-TARGET), und das Duplikatfeld der UI ist mit der sichtbaren Kennung nicht nutzbar (OFFICE-R1-DUP-ID-UI).",
+        "passed": false
+      },
+      {
+        "criterion_id": "C3",
+        "evidence": "REST (app/api/bugs/route.ts) und MCP (ops/mcp.mjs, bug-mcp.mjs) rufen dieselben Funktionen aus bug-board.mjs auf und prüfen über authorize; die CLI läuft mit Bearer über /api/mcp. ready() und applyBugSchema trennen Lesen von Schemaanlage, Lesewege legen nichts an. tool-definitions.mjs, bug-tools.mjs und context-tools.mjs importieren nur reine Vertragsmodule. Abweichungen der Schemas sind in OFFICE-R1-BUG-SCHEMA-LIMITS erfasst und ändern die gemeinsame Validierung nicht.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C4",
+        "evidence": "Mission → Context, Mission → Bugs und Context → Mission sind verbunden; DeskNav, Office-CI, AGENTS und ADAPTATION.md halten Regeln, Provenienz, Nutzerpausen und Nichtblockerbehandlung klar fest. Der Link Bug → Mission erreicht die Zielmission jedoch nicht, weil MissionLog nur ?mission=N auswertet und nicht /missions#mission-N (OFFICE-R1-BUG-MISSION-LINK). Mehrere verlinkte Dokumente lagen nicht vor.",
+        "passed": false
+      },
+      {
+        "criterion_id": "C5",
+        "evidence": "Grenzen werden überwiegend ehrlich benannt: kein npm ci, kein WebMCP-Host, keine Rechtsabnahme, Modelle als Planungsmetadaten, keine Live-Integration. Die eingereichten Tests decken Auth, Idempotenz, Rollback und Schema ab. VALIDATION.md nennt aber die 1280-Pixel-Überbreitenprüfung, die das Skript nicht misst, verschweigt die offene Screenshot-Abnahme und lässt den Endstatus von OFFICE-BUG-0001 offen (OFFICE-R1-VALIDATION-CLAIMS). Für Duplikate auf geschlossene Originale und den UI-Duplikatweg fehlen Tests.",
+        "passed": false
+      }
+    ],
+    "decision": "CHANGES_REQUESTED",
+    "findings": [
+      {
+        "file": "TradegazingOfficeDesk/ops/bug-board.mjs",
+        "id": "OFFICE-R1-DUP-CLOSED-TARGET",
+        "impact": "Ein belegter Laufblocker oder neues Evidenzmaterial verschwindet aus den offenen Blockern und Kennzahlen. Die dokumentierte Regel, dass neue Vorkommen erledigte Bugs wieder öffnen, lässt sich über den Duplikatweg umgehen.",
+        "location": "checkDuplicate, updateBug, listBugs",
+        "problem": "Ein offener Bug mit aktuellem BLOCKIERT-Vorkommen lässt sich per bug_update als DUPLIKAT eines Bugs mit Status ERLEDIGT oder KEIN_FEHLER markieren. checkDuplicate prüft den Abschlussstatus des Ziels nicht. listBugs ordnet die Vorkommen dem Original zu, berechnet blocked aber nur für nicht geschlossene Bugs. Damit sind beide Bugs geschlossen und das Original wird nicht wieder geöffnet. addBugOccurrence verweist dagegen ausdrücklich auf das Original, wo dasselbe Vorkommen die Wiederöffnung auslösen würde.",
+        "recommendation": "Beim Wechsel auf DUPLIKAT in derselben Transaktion prüfen, ob das Ziel geschlossen ist und die Quelle aktuelle Vorkommen außer KONTEXT_BEENDET hat. In diesem Fall das Ziel wie in addBugOccurrence wieder öffnen (Status NEU, Abschlussbeleg leeren, Revision erhöhen) oder die Änderung mit 409 ablehnen. Die gewählte Regel in docs/BUG_BOARD.md festhalten.",
+        "severity": "P2",
+        "verification": "Neuer Test: Bug A ERLEDIGT, Bug B mit BLOCKIERT, B per updateBug als Duplikat von A markieren. Danach muss A wieder offen sein und listBugs summary.blockers 1 liefern, oder die Änderung schlägt mit 409 ohne Datenänderung fehl."
+      },
+      {
+        "file": "TradegazingOfficeDesk/app/BugBoard.tsx",
+        "id": "OFFICE-R1-DUP-ID-UI",
+        "impact": "Der Dublettenworkflow der Oberfläche ist mit der angezeigten Kennung nicht durchführbar. Nutzer legen Dubletten dadurch eher offen liegen oder müssen die UUID aus der URL kopieren.",
+        "location": "DraftFields, Feld 'ID des ursprünglichen Bugs'; BugDetail; ops/bug-board.mjs rowById",
+        "problem": "duplicate_of wird in rowById ausschließlich gegen die interne UUID aufgelöst. Die Oberfläche zeigt in Tabelle und Detail aber nur das Label OFFICE-BUG-NNNN; die UUID steht nur im Query-Parameter der URL. Wer die sichtbare ID einträgt, erhält 'Bug nicht gefunden'. Der Browser-Smoke deckt den Duplikatweg nicht ab.",
+        "recommendation": "Im Formular eine Auswahl beziehungsweise Suche bestehender Bugs anbieten oder im Backend OFFICE-BUG-NNNN auf die UUID auflösen und die UUID kanonisch speichern. Im Detail das Label des Originals anzeigen.",
+        "severity": "P2",
+        "verification": "Test für REST und UI: Status DUPLIKAT mit der sichtbaren Kennung des Originals speichern, danach bug_get und Detailansicht auf die korrekte Verknüpfung prüfen."
+      },
+      {
+        "file": "TradegazingOfficeDesk/app/BugBoard.tsx",
+        "id": "OFFICE-R1-BUG-MISSION-LINK",
+        "impact": "Der Sprung vom Bug-Vorkommen zur Mission landet oben in der Liste, ohne die Mission zu fokussieren oder zu öffnen. Die Rückverknüpfung Bug → Mission erfüllt ihren Zweck nicht.",
+        "location": "BugDetail, Missionslink; tests/bug-render.test.mjs",
+        "problem": "Der Link vom Vorkommen zur Mission lautet /missions#mission-N. MissionLog wertet aber nur den Query-Parameter ?mission=N aus. Die Karten entstehen erst nach dem Laden auf dem Client, sodass der Browser das Fragment beim Seitenaufruf nicht findet, und targeted bleibt false. ContextCore verwendet korrekt /missions?mission=N. Der Rendertest schreibt die falsche Form fest.",
+        "recommendation": "Link auf /missions?mission=N umstellen und die Erwartung in tests/bug-render.test.mjs anpassen.",
+        "severity": "P2",
+        "verification": "Rendertest auf die neue URL umstellen und im Browser-Smoke den Link aus einem Bug-Vorkommen aufrufen: die Zielkarte muss geöffnet und fokussiert sein."
+      },
+      {
+        "file": "TradegazingOfficeDesk/app/api/local/session/route.ts",
+        "id": "OFFICE-R1-SESSION-BOOTSTRAP",
+        "impact": "Der Bearer-Schlüssel schützt nur gegen Browserangriffe, nicht gegen lokale Prozesse. Zuschreibungen im Audit (actor, author) können eine Nutzerhandlung vortäuschen, obwohl die Regeln verbieten, Nutzerfreigaben zu simulieren.",
+        "location": "POST; ops/auth.mjs authorize",
+        "problem": "Die Route vergibt eine gültige signierte Sitzung, wenn die Header Origin, Sec-Fetch-Site und x-desk-session passen. Ein Geheimnis ist nicht nötig. Nicht-Browser-Clients können diese Header frei setzen, also kann jeder lokale Prozess oder lokale Nutzer mit Zugriff auf 127.0.0.1:43120 ohne Kenntnis von local-auth.json eine Sitzung erhalten. Damit lesen und schreiben sie unter dem Actor 'Matthias'. Die Dateirechte-Prüfung 0600 suggeriert einen stärkeren Schutz. README nennt nicht authentisierte API-Zugriffe als abgewiesen. Auch WebMCP-Aufrufe laufen über das Cookie und erscheinen als 'Matthias'.",
+        "recommendation": "Sitzungsausgabe an einen vom Launcher erzeugten Einmalcode binden. Falls der Schutz bewusst nur gegen Browser gilt, das Bedrohungsmodell in README und docs/MCP.md ausdrücklich so benennen und die Formulierung zu nicht authentisierten Zugriffen einschränken. Actor für WebMCP-Aufrufe von direkter Nutzerbedienung unterscheiden.",
+        "severity": "P2",
+        "verification": "HTTP-Test ohne Kenntnis des Schlüssels mit gefälschten Headern: entweder wird die Sitzung abgelehnt, oder die Dokumentation beschreibt die Grenze ausdrücklich."
+      },
+      {
+        "file": "TradegazingOfficeDesk/ops/context-tools.mjs",
+        "id": "OFFICE-R1-CONTEXT-TOOL-PATHS",
+        "impact": "MCP-Clients, die der Beschreibung folgen, erhalten Validierungsfehler. Gültige design/-Quellen bleiben ungenannt; ein Quellprojektbegriff verbleibt im Office-Vertrag.",
+        "location": "fields.sources.items.properties.ref.description",
+        "problem": "Die Tool-Beschreibung nennt erlaubte DOCUMENT-Pfade unter docs/, game/, assets/, TradegazingOfficeDesk/ sowie AGENTS.md und README.md. Der Validator in context-contract.mjs erlaubt aber design/ und nicht game/. 'game/' ist ein Rest aus der Aunerio-Vorlage, obwohl ADAPTATION.md Game-Integrationen als nicht übernommen ausweist.",
+        "recommendation": "Beschreibung an den Validator und docs/MCP.md angleichen: game/ durch design/ ersetzen.",
+        "severity": "P3",
+        "verification": "Kleiner Vertragstest: tools/list-Beschreibung enthält nicht 'game/', und eine Quelle unter design/ wird angenommen."
+      },
+      {
+        "file": "TradegazingOfficeDesk/ops/bug-tools.mjs",
+        "id": "OFFICE-R1-BUG-SCHEMA-LIMITS",
+        "impact": "Schema-konforme MCP- und WebMCP-Eingaben werden serverseitig abgelehnt. Die Speicherung bleibt korrekt, weil der Validator entscheidet, die Schnittstelle ist aber irreführend.",
+        "location": "bugProperties, occurrenceProperties",
+        "problem": "Die veröffentlichten JSON-Schemas weichen von den Validatoren in bug-contract.mjs ab. owner und duplicate_of: Schema 3000, Validator 160. mission_id, run_id, stage und version: Schema 3000, Validator 200. evidence_ref: Schema 3000, Validator 1500. Außerdem deklariert das Schema components als maxLength 80, aber Pflichtbedingungen wie der Zurückstellungsgrund bei Status ZURUECKGESTELLT sind nicht erkennbar.",
+        "recommendation": "Längen je Feld aus einer gemeinsamen Konstante in bug-contract.mjs ableiten und bedingte Pflichtfelder in den Tool-Beschreibungen nennen.",
+        "severity": "P3",
+        "verification": "Vertragstest: Für jedes Feld stimmt die maxLength im Tool-Schema mit dem Validatorlimit überein."
+      },
+      {
+        "file": "TradegazingOfficeDesk/docs/VALIDATION.md",
+        "id": "OFFICE-R1-VALIDATION-CLAIMS",
+        "impact": "Die Prüfbelege sagen punktuell mehr aus, als das Skript zeigt, und der Abschluss des einzigen dokumentierten Blockers ist nicht nachvollziehbar.",
+        "location": "Abschnitte 'Integrationsbefund OFFICE-BUG-0001' und 'Finaler Implementierungsstand'; tests/browser-smoke.py",
+        "problem": "VALIDATION.md nennt 1280/390/320 Pixel und keine äußere Überbreite, das Skript misst scrollWidth aber nur in der Schleife für 390 und 320; die Breitenliste im Bericht ist fest eingetragen. 'identischer REST-/MCP-Stand' prüft im Browser-Smoke nur die Anzahl der Vorkommen über bug_get. Die Testnachweise nennen die Screenshots als visuell noch nicht abgenommen, VALIDATION.md verschweigt das. 'Nach Browserbeleg wird derselbe Kontext aktualisiert' steht weiterhin im Futur, ohne dass der Endzustand von OFFICE-BUG-0001 dokumentiert ist.",
+        "recommendation": "Die Überbreitenmessung auf 1280 ausweiten oder die Aussage auf 390/320 beschränken. Die REST/MCP-Aussage auf den tatsächlichen Umfang präzisieren oder auf den Node-Test verweisen. Offene visuelle Abnahme nennen und den tatsächlichen Endstatus von OFFICE-BUG-0001 eintragen.",
+        "severity": "P3",
+        "verification": "Dokument und Skript gegeneinander lesen; bei Skriptänderung den Smoke in einer leeren isolierten QA-Instanz erneut ausführen."
+      },
+      {
+        "file": "TradegazingOfficeDesk/docs/MCP.md",
+        "id": "OFFICE-R1-MISSION-VERSION-DOC",
+        "impact": "MCP-Clients können neuere Missionsänderungen unbemerkt überschreiben, obwohl die Dokumentation einen zwingenden Schutz nahelegt.",
+        "location": "Abschnitt Werkzeuge; ops/store.mjs updateMission; ops/tool-definitions.mjs update_mission",
+        "problem": "MCP.md sagt, Missions- und Wissensupdates verlangten die gelesene Version, und AGENTS.md fordert die erwartete Version. update_mission verlangt nur mission_id, und updateMission überspringt die Prüfung ohne expectedVersion. Die Tests nutzen diesen Weg ausdrücklich.",
+        "recommendation": "Entweder expected_version für REST und MCP verpflichtend machen und die Tests anpassen oder MCP.md korrigieren und die Option als optional kennzeichnen.",
+        "severity": "P3",
+        "verification": "Bei Pflichtvariante: Update ohne Version liefert einen Validierungsfehler ohne Datenänderung. Bei Dokumentationsvariante: Text und Tool-Schema stimmen überein."
+      }
+    ],
+    "resolved_findings": [],
+    "review_id": "a47ba44c87ff486aa1c446d64b12f9e0",
+    "submission_sha256": "b10d77fae4045cd81dce3b35ebb6765f18b3a41804aff35bc3c34a2b7e138332",
+    "summary": "Reine Textprüfung des eingereichten Pakets; es wurden keine Tests ausgeführt. Kein P0/P1-Befund. Trennung von Daten, Schlüssel, Port und Cookie, die Transaktion aus Bug, Vorkommen und Ereignis, Request-Key-Replay, Revisionsprüfung, kontextgebundene Blocker sowie die Trennung der Browser-Tooldefinitionen sind im Code schlüssig umgesetzt. Offen bleiben vier P2-Befunde: (1) Ein laufender Blocker verschwindet, wenn sein Bug als Duplikat eines geschlossenen Originals markiert wird, ohne dass das Original wieder öffnet. (2) Das Duplikatfeld der UI verlangt eine UUID, die die UI nicht anzeigt. (3) Der Link vom Bug zur Mission erreicht die Zielmission nicht. (4) Die Browsersitzung lässt sich ohne Geheimnis mit gefälschten Headern beziehen. Dazu kommen vier P3-Befunde zu Tool-Schemas und Dokumentation. VALIDATION.md belegt zudem die Überbreitenprüfung bei 1280 Pixeln nicht durch das Smokeskript. APPROVED ist damit nach den Reviewregeln nicht möglich. Ob Befunde unterhalb P1 laut Auftrag ins Board übernommen und zurückgestellt werden, entscheidet der Nutzer; dieses Review erteilt keine Merge- oder Betriebsfreigabe.",
+    "unverified": [
+      "Tests, Build und Browser-Smoke wurden nicht selbst ausgeführt; die Angaben (34/34 Tests, Typecheck, Build, Smoke) sind Entwicklerberichte.",
+      ".gitignore wurde nicht eingereicht; der Ausschluss von .office-desk-data/, node_modules, dist und Logs aus Git ist nicht geprüft.",
+      "package-lock.json, public/brand/*.svg, docs/legal/*, Screenshots und 'Tradegazing Office Desk.command' lagen nicht vor; Lockfile-Hash, Originalität der Marken, Lizenzinventur und Launcher sind nicht geprüft.",
+      "docs/MISSION_WORKFLOW.md, docs/CONTEXT_CORE.md, docs/DREAMTEAM.md und docs/LEGAL_LICENSE_LOG.md sind verlinkt, wurden aber nicht eingereicht.",
+      "Root-README.md und ArchitekturDraft.md lagen nicht vor; ob sie gemäß AGENTS.md Abschnitt 6 nachgezogen wurden, ist offen.",
+      "Der tatsächliche Board-Endzustand von OFFICE-BUG-0001 und Mission 1 ist nicht einsehbar.",
+      "Ein frisches npm ci wurde laut Bericht nicht ausgeführt; ein echter WebMCP-Host wurde nicht getestet.",
+      "Im gebündelten Server könnte projectRoot aus config.mjs anders aufgelöst werden. ops/launch.mjs setzt TRADEGAZING_OFFICE_DESK_HOME explizit, das Verhalten des direkten Skripts 'npm run start' ist aber ungeprüft."
+    ]
+  }
+}

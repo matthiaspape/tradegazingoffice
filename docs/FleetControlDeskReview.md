@@ -55,3 +55,7 @@ Die Designstudie und ihre Belege sind im Repository enthalten:
 - [Browser-Prüfergebnisse](../design/fleet-control-desk/browser-checks.json) und [unabhängige Reviewentscheidung mit vollständigen Befunden](../design/fleet-control-desk/dreamteam-review.json). Operative Worker-/Prozessmetadaten sind aus dem exportierten Feedback entfernt.
 
 Die HTML-Quelldatei ist ein Inline-Entwurf; `index.html` enthält dessen für den Browser verpackte Vorschau. Das neue Repository `matthiaspape/tradegazingoffice` speichert auf Nutzerauftrag den ersten Konzeptstand auf `main`. Die bislang extern gespeicherten Designartefakte und bereinigten Belege werden dabei mit aufgenommen. Vorhandene fachliche Prüfungen werden wiederverwendet; die Übertragung eröffnet keine neue Reviewserie. Keine Produktionsprozesse gestartet oder Researchquellen verändert.
+
+## Nachtrag zur Projektverwaltung
+
+Mit dem Folgeauftrag vom 04.11.2026 ist ein eigenes Office-Projektmanagement samt Bug Board eingerichtet. Der weiterhin zurückgestellte Konzeptbefund **FCD-011** ist dort unter **OFFICE-BUG-0003** erfasst (MITTEL, Wahrscheinlichkeit unbekannt; spätere aggregierte Ausführungsanalyse benötigt passende Originaldaten). Seine frühere Beschreibung und die historische Reviewentscheidung bleiben erhalten. Die neue Boardablage ist keine Reparatur und keine neue Abnahme des Trading-Journal-Konzepts.

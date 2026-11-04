@@ -1,0 +1,20 @@
+{
+  "mission_create_edit_reload": true,
+  "bug_create_edit_occurrence": true,
+  "rest_mcp_same_data": true,
+  "auth_origin": true,
+  "pages": [
+    "/",
+    "/bugs",
+    "/context",
+    "/legal"
+  ],
+  "widths": [
+    1280,
+    390,
+    320
+  ],
+  "dark_logo": true,
+  "page_errors": [],
+  "data_scope": "isolated QA instance only"
+}

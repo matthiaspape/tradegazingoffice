@@ -1,0 +1,3 @@
+# Original license/notice evidence is content-addressed. Preserve exact bytes,
+# including upstream CRLF and trailing spaces; do not normalize or text-diff it.
+TradegazingOfficeDesk/docs/legal/evidence/** -text -diff

@@ -1,0 +1,19 @@
+#!/bin/zsh
+set -eu
+cd "$(dirname "$0")"
+if command -v node >/dev/null 2>&1; then
+  desk_node="$(command -v node)"
+else
+  desk_node="$HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node"
+fi
+if [ ! -x "$desk_node" ]; then echo 'Node.js 24+ wird benötigt.' >&2; exit 1; fi
+desk_command="${1:-help}"
+if [ "$#" -gt 0 ]; then shift; fi
+case "$desk_command" in
+  call) exec "$desk_node" ops/mcp-call.mjs "$@" ;;
+  setup|launch|stop|backup|migrate|restore|license-inventory|bug-schema) exec "$desk_node" "ops/$desk_command.mjs" "$@" ;;
+  build) exec "$desk_node" node_modules/vinext/dist/cli.js build "$@" ;;
+  typecheck) exec "$desk_node" node_modules/typescript/bin/tsc --noEmit "$@" ;;
+  test) exec "$desk_node" --test tests/*.test.mjs "$@" ;;
+  *) echo 'Aufruf: ./desk {setup|launch|stop|backup|migrate|restore|build|typecheck|test|license-inventory|call TOOL [JSON|-]}' ;;
+esac

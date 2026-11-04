@@ -8,9 +8,19 @@ Diese Datei gilt für das gesamte Repository. Sie enthält dauerhafte Projekt- u
    Für Dashboard-/MT5-Aufgaben lies zusätzlich `docs/DashboardPlan.md`.
    Für Flottenjournal-/Fleet-Control-Desk-Aufgaben lies zusätzlich `docs/FleetControlDeskKonzept.md` und die konkreten Grenzen in `docs/FleetControlDeskReview.md`. Die grafische Designstudie verwendet fiktive Daten und ist keine Liveintegration oder freigegebene Berechnungsengine.
    Repository: `matthiaspape/tradegazingoffice`, Standardbranch `main`. Die Entwurfsquelle liegt in `design/fleet-control-desk/fleet-control-desk.html`, die im Browser öffnungsfähige Vorschau in `design/fleet-control-desk/index.html`. Beide sind Designartefakte; eine Produktionslaufzeit ist damit nicht festgelegt.
+   Das implementierte lokale Projektmanagement liegt in `TradegazingOfficeDesk/` (Node.js 24+, React/vinext, SQLite). Einstieg und Regeln stehen in dessen README.md und AGENTS.md; das ist eine eigene Anwendung gegenüber der Fleet-Control-Desk-Designstudie.
 2. Prüfe Git-Status und bestehende Änderungen, bevor du Dateien bearbeitest. Erhalte Nutzeränderungen und Arbeiten anderer Sessions.
 3. Unterscheide Planungsentscheidung, Anbieterangabe, tatsächlich getestete Fähigkeit und produktive Einrichtung. Dokumente allein beweisen keine freigeschalteten Konten oder funktionierenden APIs.
-4. Der initiale Stand vom 03.10.2026 besteht aus Dokumentation. Es gibt noch keinen belegten Implementierungsstand, keine festgelegte Sprache/Laufzeit und keine freigegebenen Steuerregeln. Aktualisiere diese Aussage, sobald sich der tatsächliche Stand ändert.
+4. Der initiale Stand vom 03.10.2026 war dokumentarisch. Seit 04.11.2026 ist das lokale Projektmanagement als `TradegazingOfficeDesk/` implementiert; Trading-Journal, Provideranbindungen und Steuerregeln bleiben Entwurf beziehungsweise ungeklärt. Die Node-/SQLite-Laufzeit des Projektmanagements ist keine Laufzeitentscheidung für die künftige Buchhaltung.
+
+## Projektmanagement und Bug Board
+
+- Neue Office-Arbeit mit `tradegazing_office_desk.get_project_context` beginnen; relevante Einträge/Quellen und vorhandene Mission lesen. Wenn der Client den neuen MCP noch nicht geladen hat: `cd TradegazingOfficeDesk` und `./desk call get_project_context`. Quellengebundene Entscheidungen im Context Core, Arbeit und Belege im Mission Log pflegen.
+- Eigener Desk unter `http://127.0.0.1:43120`, Bug Board `/bugs`. Eigene geschützte Daten unter `.office-desk-data/` oder `TRADEGAZING_OFFICE_DESK_HOME`; keine Daten/Schlüssel aus Aunerio oder Tradegazing übernehmen.
+- Funde vor Reparatur mit `bug_list` suchen und mit `bug_create` beziehungsweise `bug_add_occurrence` erfassen. `OFFICE-BUG-…` gehört zu Office; historische Tradegazing-IDs nicht als eigene Bugs behandeln. Risiko, Wahrscheinlichkeit, Beleglage und tatsächliche Blockade getrennt begründen.
+- Such-/Researchbegleitung repariert ausschließlich belegte notwendige Laufblocker; alle anderen Funde ins Board und fortsetzen. Eigenständige Nutzer-Entwicklungsaufträge behalten ihren Scope. Neue Nebenbefunde erweitern keine Abschlusskriterien; kein Erzwingen eines APPROVED.
+- Status und Laufentscheidung starten keine Prozesse und erteilen keine zusätzlichen Rechte. Bei Kontextende KONTEXT_BEENDET ergänzen. Boardpflege, Registerübernahme und Cleanup erhalten keine eigene Test-/Reviewserie. Bei Unerreichbarkeit vollständigen Fund im Log mit „Boardübernahme ausstehend“ sichern.
+- Nichtblocker mit ID, Auswirkung, Wahrscheinlichkeit/Einstufung und Zurückstellungsgrund im Log und Abschluss ausweisen. Fremde/pausierte Chats und Prozesse nicht reaktivieren.
 
 ## 2. Zielarchitektur und fachliche Invarianten
 

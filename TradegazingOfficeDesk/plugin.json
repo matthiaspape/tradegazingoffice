@@ -1,0 +1,25 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "tradegazing-office-desk",
+  "version": "0.1.0",
+  "description": "Lokales Projektmanagement für Tradegazing Office mit Missionen, Wissen, Bug Board und Lizenznachweisen.",
+  "author": {
+    "name": "Tradegazing"
+  },
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Tradegazing Office Desk",
+        "shortDescription": "Projektmanagement & Bugs",
+        "longDescription": "Lokale Missionsverwaltung mit versioniertem Context Core, Bug Board und Lizenzregister.",
+        "developerName": "Tradegazing",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "defaultPrompt": "Lade den Tradegazing Office-Projektkontext und die aktuelle Mission."
+      }
+    }
+  }
+}

@@ -18,3 +18,12 @@ backups/
 logs/
 work/
 *.log
+.office-desk-data/
+node_modules/
+dist/
+.next/
+.vite/
+.vinext/
+*.tsbuildinfo
+*.sqlite*
+*.db*
