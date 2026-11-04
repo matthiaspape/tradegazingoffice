@@ -7,7 +7,7 @@ Diese Regeln ergänzen die AGENTS.md im Repositoryhauptordner. Nutzerauftrag und
 - README.md, docs/MCP.md, docs/MISSION_WORKFLOW.md, docs/BUG_BOARD.md und bei Wissensarbeit docs/CONTEXT_CORE.md lesen.
 - Eigene Instanz: http://127.0.0.1:43120. MCP-Name: `tradegazing_office_desk`. Eigener Datenpfad `../.office-desk-data/`, überschreibbar über `TRADEGAZING_OFFICE_DESK_HOME`.
 - Jeden neuen Chat mit `get_project_context` beginnen; relevante Einträge mit `get_context_entry` und ihre Quellen lesen. Bestehende Mission samt Log mit `get_mission` lesen. Fallback: `./desk call WERKZEUG [JSON_DATEI|-]`.
-- Vor neuen Missionen bestehende suchen. Ziele und Abschlusskriterien knapp festhalten. `recommend_mission_profile` und `execution_assessment` verwenden. Modelle sind übernommene Planungsmetadaten, keine Modellumschaltung oder Verfügbarkeitszusage.
+- Bei jeder neuen inhaltlichen Nutzeraufgabe automatisch und ohne Rückfrage eine eigene thematische Mission begleitend im Hintergrund anlegen. Vorher nach vorhandener Mission suchen; Fortsetzungen/Wiederholungen derselben Aufgabe dort weiterführen, reine Statusfragen ohne Neuanlage. Ziele und Abschlusskriterien knapp festhalten, vor Bearbeitung IN_PROGRESS setzen. `recommend_mission_profile` und `execution_assessment` verwenden. Modelle sind übernommene Planungsmetadaten, keine Modellumschaltung oder Verfügbarkeitszusage.
 - Missionen, Wissen und Bugbewertungen über REST/MCP/CLI pflegen, nicht direkt per SQL. Updates vorher lesen und erwartete Version/Revision verwenden. Quelle und Begründung beibehalten.
 
 ## Bugs und Umfang
@@ -27,4 +27,5 @@ Diese Regeln ergänzen die AGENTS.md im Repositoryhauptordner. Nutzerauftrag und
 - `./desk bug-schema --apply --offline` ist nur für eine bewusst gestoppte bestehende Office-Instanz. Kein HTTP-Migrationsweg.
 - Datenbank, Schlüssel, Logs und Sicherungen bleiben außerhalb von Git. Einrichtungs-/Testdaten sind isoliert; keine Bank-, Mail-, Buchhaltungs-, Handels- oder EA-Aktionen.
 - Sicherung nur ausdrücklich über `./desk backup`; kein neuer Zeitplan, Cloudabgleich oder fremde Backupregel. Restore überschreibt kein vorhandenes Ziel und erzeugt einen neuen Office-Schlüssel.
-- AGENTS.md, README und Architektur bei dauerhaften Struktur-/Betriebsänderungen pflegen. Commit/Push entsprechend Nutzerauftrag; nur eigene Dateien stagen, kein Force-Push.
+- AGENTS.md, README und Architektur bei dauerhaften Struktur-/Betriebsänderungen pflegen. Jeden abgeschlossenen nachvollziehbaren Zwischenstand zeitnah thematisch committen, nicht bis zum Missionsende warten. Nur eigene Dateien stagen, private/fremde Änderungen erhalten, keine Leercommits oder Force-Pushes.
+- Nach fachlichem Abschluss eigene temporäre Artefakte, Testdaten und nicht benötigte Hilfsprozesse/Arbeitsstände bereinigen; Ergebnisse, Belege und der benötigte Office-Betrieb bleiben erhalten. Letzte eigene Änderungen committen, den Arbeitsbranch ohne erneute Rückfrage zu origin pushen und den Push prüfen. Erst dann Mission mit Ergebnis/Commit/offenen Risiken administrativ abschließen. Spätere ausdrückliche Nutzerpausen oder Einschränkungen gehen vor.
