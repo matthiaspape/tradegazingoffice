@@ -1,0 +1,200 @@
+{
+  "review_id": "01ce3d1889314561b359628dafff6326",
+  "mission_id": "01ce3d1889314561b359628dafff6326",
+  "project": "Tradegazing Office – Fleet Control Desk",
+  "round": 1,
+  "developer": "codex",
+  "reviewer": "claude",
+  "submission_sha256": "eb094192043163877c940bd5dcb5b8b3c79fa2fe9966f0870e2201be779e6d7c",
+  "previous_review_id": null,
+  "created_at": "2026-11-04T15:27:23.952447+00:00",
+  "updated_at": "2026-11-04T15:31:29.813447+00:00",
+  "decision": "CHANGES_REQUESTED",
+  "approval_scope": "Submitted packet only; no claim about unsubmitted code or independently executed tests",
+  "review": {
+    "criteria_results": [
+      {
+        "criterion_id": "C1",
+        "evidence": "Positiv: §1 trennt Konto und Flotte, schließt doppelte Konto-Equity aus, verbietet die Zurechnung allein über Magic Number und belässt Ergebnisse bei Originalrevision und Pool. Nicht erfüllt: Die Karte hat eine Einsatzart und eine Revision trotz möglicher Mehrfacheinsätze, Standardfilter und Deduplikationsschlüssel fehlen, Research gilt als Einsatz (FCD-001). Variante und Revision sind nicht als getrennte Ebenen definiert, Pool und Revision fehlen in Navigation und Ergebnisansicht (FCD-002).",
+        "passed": false
+      },
+      {
+        "criterion_id": "C2",
+        "evidence": "Positiv: Die vier Kacheln, Flottenkarten, sechs Detailregister und die Priorisierung in Stufen sind für Performance und Risiko sinnvoll aufgebaut. Nicht erfüllt: Die benannte Kontoansicht ist nicht spezifiziert und Margin fehlt in der Übersicht (FCD-006). Summiertes U/C verdeckt Poolengpässe (FCD-007). Die Statusleiste nennt nur sechs von acht Signalen (FCD-008). Eine aggregierte Ausführungssicht fehlt (FCD-011).",
+        "passed": false
+      },
+      {
+        "criterion_id": "C3",
+        "evidence": "Positiv: Gebuchtes Netto, Cashflowtrennung, Kostenattribution ohne Doppelabzug, Residual, Rendite und Kalenderbasis entsprechen der Grundlage §4.6/§4.7. Nicht erfüllt: Der Tradezyklus ist undefiniert und Tester-Endschließungen fehlen (FCD-003). Es gibt keine Konsistenz- und Grenzregel zwischen Buchungen und gesampelter offener Bewertung, und die Startbewertung ist unscharf formuliert (FCD-004). DD-Synchronisierung, Peak-Basis, Equity-Cashflowbehandlung und DD-%-Basis fehlen (FCD-005).",
+        "passed": false
+      },
+      {
+        "criterion_id": "C4",
+        "evidence": "Positiv: Der Stand ist ehrlich als Entwurf ausgewiesen, Routen gelten als nicht erreichbar, es gibt keine Steueraktionen, UNKNOWN wird nicht zurückgesetzt, Lücken und Teilumfang sind sichtbar, das Fünf-Minuten-Sampling wird benannt, und '—' mit Grund ist vorgesehen. Nicht erfüllt: UNKNOWN, Altverpflichtungen und Aufnahmestatus fehlen auf Karte und Leiste (FCD-008). Für zusammengesetzte Kennzahlen mit unbekannten Kosten fehlt eine Qualitätsregel (FCD-009). cashflow_event und telemetry_health fehlen in der Datenartenliste (FCD-010). Ergänzend sind Rangfolge und Sampling-Semantik unscharf (FCD-012, FCD-013).",
+        "passed": false
+      },
+      {
+        "criterion_id": "C5",
+        "evidence": "§9 beschreibt einen kleinen vierstufigen Pfad und startet weder Collector noch Testlauf oder produktiven Dienst. §10 ordnet BUG-0100/0101, BUG-0069 und BUG-0084 konsistent zur Grundlage §12 ein, ohne Reparatur- oder Reviewausweitung. Live-Steuerung ist ausgeschlossen. Sharpe, Sortino, CVaR und CDaR sind als späteres Paket zurückgestellt.",
+        "passed": true
+      }
+    ],
+    "decision": "CHANGES_REQUESTED",
+    "findings": [
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-001",
+        "impact": "Die Startseite kann Live- und Demo-/Researchergebnisse in einer Zahl zusammenführen oder eine Revision anzeigen, die nur für einen von mehreren Einsätzen gilt. Das ist genau die Fehlzuordnung und Doppelzählung, die C1 ausschließen soll.",
+        "location": "§1 Fachliches Modell; §3 globale Filter; §3.3 Flottenkarten; §6",
+        "problem": "Die Bezugseinheit von Karte und Summen ist nicht eindeutig. Eine Karte pro Flotte zeigt genau eine Einsatzart und eine bestätigte Revision, obwohl §1 ausdrücklich eine Flotte auf zwei Konten vorsieht. Bestätigte Manifeststände gehören aber zum jeweiligen Einsatz und können abweichen. Ein Standardwert für den Einsatzart-Filter fehlt, obwohl §6 das Verschmelzen von Live, Demo und Research verbietet. 'Summen deduplizieren anhand stabiler IDs' nennt weder Schlüssel noch Regel. Zudem definiert §1 den Einsatz als tatsächlich laufende Instanz und nennt dort Research als Einsatzart, während die Grundlage festhält: 'Ein Run ist keine Liveinstanz'.",
+        "recommendation": "Eine Kennzahlenregel festlegen: Atomare Ergebniseinheit ist der Einsatz (fleet_id + account_key + source_id/Instanz), die Flotte ist eine ausdrücklich benannte Aggregation. Standardfilter auf eine Einsatzart setzen (z. B. Live) und keine Summe über Einsatzarten zulassen. Bei mehreren Einsätzen zeigt die Karte 'n Einsätze' und abweichende Revisionen. Research-Läufe als run_id-Scope getrennt von Einsatz/Instanz modellieren. Deduplikationsschlüssel für Konto, Deal, Position und Pool benennen.",
+        "severity": "P1",
+        "verification": "Beispielfall im Konzept durchrechnen: dieselbe Flotte live auf Konto A mit Revision 7, demo auf Konto B mit Revision 6 sowie ein Research-Run. Kartenanzeige und Summen müssen eindeutig folgen."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-002",
+        "impact": "Sind aktive und auslaufende Revision derselben Strategie gleichzeitig offen, kann die neue Revision die Historie der alten stillschweigend erben, was die Grundlage §3 ausschließt. Alternativ erscheinen Kapazität und Risiko doppelt, oder w wird gegen ein falsches R gerechnet.",
+        "location": "§1 Begriffstabelle und Navigation; §4 Register Varianten und Analyse; §4.1",
+        "problem": "Variante ist als konkrete Strategie einschließlich Parameter-/Paketrevision definiert. Zugleich führt die Varianten-Tabelle Revision als Spalte, und das Variantendetail markiert Regimewechsel. Offen bleibt, ob eine Zeile und ein Detail eine stabile Variantenlinie oder genau eine Revision darstellen. Revision und Pool fehlen in der Navigationskette Flotte → Variante → Position. Das Verhältnis Variante/Revision zu Pool (1:1, n:1, zeitabhängig) ist nicht festgelegt. Die Analyse nennt Symbol-, TF- und Strategiebeiträge, aber nicht das in Grundlage §8 vorgesehene 'Ergebnis nach Pool/Revision/Symbol'. Unklar ist auch, wie x und w bei auslaufenden Revisionen zu lesen sind.",
+        "recommendation": "Stabile Variantenlinie und unveränderliche variant_revision getrennt definieren. Standardzeile und Detail-Scope festlegen, z. B. Linie mit aufklappbaren Revisionen und Revisionsgrenzen. Jede Position und jedes Ergebnis fest an Originalrevision und Pool binden. Pool-/Revisionsbeiträge als eigene Ansicht ergänzen. x, R und w ausdrücklich an eine Manifestrevision binden und auslaufende Revisionen ohne neues Entryrisiko kennzeichnen.",
+        "severity": "P1",
+        "verification": "Szenario beschreiben: Revision A läuft mit offener Position aus, Revision B ist aktiv im selben Pool. Prüfen, dass Ergebnis, offene Verpflichtung, x/w und U/C jeweils einmal und beim richtigen Eigentümer erscheinen."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-003",
+        "impact": "Dieselben Deals können je nach Implementierung unterschiedliche PF-, Winrate- und Tradezahlen liefern. Erzwungene Endschließungen können Researchstatistiken verfälschen. Das Kartenergebnis ist nicht mit den Kennzahlen daneben abgleichbar.",
+        "location": "§3.3; §5 Profit Factor, Winrate, Expectancy",
+        "problem": "PF, Winrate, Expectancy und Tradezahl stützen sich auf 'abgeschlossene Tradezyklen', der Begriff selbst ist aber nicht definiert. Die Grundlage verlangt eine versionierte Gruppierung. Es fehlen: Beginn und Ende eines Zyklus (Positions-ID, Intent oder Opportunity), Umgang mit Nachkäufen, mehreren Positionen je Gelegenheit und Teilfills, die Periodenzuordnung (z. B. Abschlusszeit bei Lebenszyklusgewinn), Zyklen mit Beginn vor der Datenabdeckung, nachträgliche Kosten oder Korrekturen sowie der Break-even-Maßstab. Historisch erzwungene Tester-Endschließungen (Grundlage §4.8) kommen im Konzept gar nicht vor. Außerdem steht auf der Karte ein unbenanntes 'Nettoergebnis' neben geschlossenen Zyklen; es bleibt offen, ob das Trading-Nettoergebnis, gebuchtes Netto oder Zyklusnetto gemeint ist.",
+        "recommendation": "Im Kennzahlenvertrag eine versionierte Definition des Tradezyklus ergänzen mit Gruppierungsschlüssel, Start, Ende, Periodenzuordnung, Korrekturverhalten, Teilabdeckung und Break-even-Regel. Tester-Endschließungen ausschließen oder gesondert ausweisen. Die Karte auf den exakten Kennzahlennamen umstellen.",
+        "severity": "P1",
+        "verification": "Referenzbeispiele im Konzept: Teilfill plus zwei Teilabgänge, Zyklus über eine Periodengrenze, spätere Swapkorrektur und Tester-Endschließung. Jedes Beispiel muss genau eine bestimmbare Zyklusbehandlung ergeben."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-004",
+        "impact": "Eine zwischen zwei Snapshots geschlossene Position kann zugleich gebucht und noch offen gezählt werden oder ganz fehlen. Daraus entstehen Phantomgewinne oder Phantom-Drawdowns und Sprünge an Periodengrenzen. Benachbarte Perioden summieren sich unter Umständen nicht konsistent.",
+        "location": "§3.2 Netto-PnL-Kurve; §5 Trading-Nettoergebnis im Zeitraum; §8 Fünf-Minuten-Vorgabe",
+        "problem": "Trading-Nettoergebnis und PnL-Kurve kombinieren ereignisbasierte Buchungen mit offener Bewertung, die laut §8 im Fünf-Minuten-Raster erfasst wird. Es gibt keine Regel, wie beide Größen pro Messpunkt auf denselben Stand gebracht werden, etwa über Watermark oder Snapshot-Konsistenz. Auch offen bleibt, welche Beobachtung an einer Kalendergrenze gilt, die zwischen zwei Snapshots liegt, und was geschieht, wenn keine belegte Startbewertung existiert. 'Bei offenen Startpositionen zählt deren Anfangsbewertung' lässt das Vorzeichen offen; gemeint ist der Abzug als Basis P(t0). Die Abgrenzung von offenem und gebuchtem Swap sowie dessen Aufteilung bei Teilabgängen (Grundlage §4.6) fehlt im Kennzahlenvertrag.",
+        "recommendation": "Festlegen: Jeder Kurvenpunkt verwendet nur Buchungen bis zum Historien-Watermark der zugehörigen Offen-Bewertung; inkonsistente Punkte werden markiert oder ausgelassen. Grenzregel definieren, z. B. letzte belegte Beobachtung vor der Grenze mit ausgewiesenem Abstand. Formel als P(t1) minus P(t0) schreiben. Ohne belegte Startbewertung die Kennzahl als 'unbekannt' oder 'Teilumfang' ausweisen. Abgrenzung offener Swap versus gebucht ergänzen.",
+        "severity": "P1",
+        "verification": "Rechenbeispiel im Konzept: Position offen über den Periodenstart, Schließung zwischen zwei Snapshots, Teilabgang mit Swap. Die Summe benachbarter Perioden muss der Gesamtperiode entsprechen, ohne Doppelzählung am Messpunkt."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-005",
+        "impact": "Ein Wechsel der Zusammensetzung kann als Drawdown oder Erholung erscheinen. Asynchrone Punkte können einen nie gleichzeitig beobachteten Tiefpunkt erzeugen, was die Grundlage §4.8 ausschließt. Einzahlungen und Auszahlungen können den Account-Equity-DD verfälschen.",
+        "location": "§3.2 Kachel Max. beobachteter Drawdown und Gesamtsicht; §3.3; §5 Maximaler DD",
+        "problem": "Der DD ist auf 'synchronisierter, cashflowbereinigter Ergebnisbasis' definiert, ohne Regeln für die Synchronisierung: Zeitraster, Toleranz, Fortschreibung letzter Werte und Behandlung von Lücken. Unklar ist auch der Fall, dass eine Flotte im Zeitraum ausfällt, hinzukommt oder ausscheidet. Für den Account-Equity-DD fehlt die Bereinigung von Ein-/Auszahlungen und Kreditänderungen. Der DD-Prozentwert auf Karten und Kachel hat keine definierte Basis und Formel; der Vertrag regelt nur Rendite. Offen bleibt auch, ob das Hoch im Zeitraum oder über den gesamten Pfad gilt.",
+        "recommendation": "Aggregationsregel festlegen: gemeinsames Raster mit Toleranz, keine stille Fortschreibung veralteter Werte, DD-Segmentierung bei Änderung der Zusammensetzung oder großen Lücken. Peak-Basis (Zeitraum oder Gesamtpfad) und DD-%-Formel je DD-Art benennen. Behandlung von Cashflow und Credit beim Account-Equity-DD festlegen.",
+        "severity": "P2",
+        "verification": "Prüfen, dass jede DD-Art im Kennzahlenvertrag Basis, Peak-Regel, Lückenregel und Cashflowbehandlung nennt und ein Beispiel mit ausfallender Flotte keinen künstlichen DD erzeugt."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-006",
+        "impact": "Bei mehreren Flotten auf einem Konto gibt es keine Stelle, die Kontorisiko, gemeinsame Margin, Fremdanteile und Abgleichsrest zusammen zeigt. Die Abgrenzung von Cashflow und PnL ist damit nicht prüfbar, und eine wesentliche EA-Kontrolle fehlt.",
+        "location": "§1 Navigation; §3 Hauptnavigation; §3.2; §4",
+        "problem": "Konto und Einsatz werden als eigenständige Perspektive genannt, und native Equity wird in eine 'ausdrücklich benannte Kontoansicht' verschoben. Diese Ansicht ist aber weder in der Hauptnavigation noch als Seite spezifiziert. Damit fehlen Ort und Inhalt für Balance, Equity, Credit, Margin, freie Margin und Marginlevel, Kontokurve, Broker-Tagesstartsaldo, Cashflows, Kontoabgleich, unzugeordnete Kosten und Fremdanteile. Die Grundlage nennt diese Daten in §4.1, §4.2, §4.7 und §8, und ihr erster Entwicklungsschritt in §10 nennt die Kontoübersicht ausdrücklich. Die Seiten Journal, Risiko und Betrieb & Daten sind ebenfalls nur als Flottenregister beschrieben, nicht als globale Seiten. Native Marginbelastung erscheint in der Übersicht gar nicht.",
+        "recommendation": "Eine Konten-/Einsätze-Seite in die Navigation aufnehmen und deren Inhalt spezifizieren: native Kontowerte, Margin, Kontokurve, zugeordnete Flotten und Einsätze, Cashflows, Kontoabgleich und Fremd-/unzugeordnete Anteile. Das kritischste Marginsignal in der Übersicht oder im Aufmerksamkeitsfeld abbilden. Die globalen Seiten Journal, Risiko und Betrieb & Daten kurz abgrenzen.",
+        "severity": "P1",
+        "verification": "Für ein Konto mit zwei Flotten, Einzahlung, Fremdposition und Residual muss das Konzept jede Größe genau einer Ansicht zuordnen."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-007",
+        "impact": "Die Startseite kann freie Kapazität suggerieren, die nicht nutzbar ist. Das gefährdet die Risikoaussage der wichtigsten Kachel.",
+        "location": "§3.2 Kachel Gebundenes Stoprisiko; §3.3 Stoprisiko U/C",
+        "problem": "Die Hauptkachel und die Flottenkarte verdichten U/C über Pools, obwohl Pools laut Grundlage §4.3 isoliert sind und V1 keine Kapazität verleiht. Ein voll belegter oder durch UNKNOWN gesperrter Pool verschwindet in einer niedrigen Gesamtquote. Weitere bindende Komponenten wie Stressmargin, Exposure und Slots erscheinen in der Übersicht nicht. Bei Max-1 kann ein Slot alle eigenen Entries sperren, ohne dass das Stoprisiko hoch wirkt.",
+        "recommendation": "Neben der Summe den engsten Engpass zeigen, z. B. höchste Poolauslastung und Zahl voller oder gesperrter Pools samt bindender Komponente. Die Summe als rein informative Größe kennzeichnen und nicht als freie Kapazität bezeichnen.",
+        "severity": "P2",
+        "verification": "Beispiel mit vier Pools, davon einer zu 100 % durch UNKNOWN gebunden: Kachel und Karte müssen den Engpass ohne Klick erkennen lassen."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-008",
+        "impact": "Eine Flotte kann in der Übersicht unauffällig wirken, obwohl UNKNOWN Kapazität bindet oder alte Revisionen weiter Risiko tragen. Geplante oder nur modellierte Bestandteile sind nicht von operativ aufgenommenen unterscheidbar.",
+        "location": "§3.3; §4 Statusleiste und Register Varianten",
+        "problem": "Die Statusleiste nennt sechs der acht in Grundlage §4.9 getrennt geforderten Signale; UNKNOWN/Reservierungen und Aufnahme-/Belegstatus fehlen. Die Flottenkarte hat weder eine UNKNOWN-Angabe noch eine Angabe zu auslaufenden Altverpflichtungen. Der Variantenzustand kennt nur aktiv, pausiert und auslaufend; 'noch nicht aufgenommen' aus Grundlage §4.2 fehlt. Die Entryfreigabe gilt laut Grundlage je Variante mit einzelnen Gründen, im Konzept erscheint sie auf Flottenebene ohne Regel für Mischzustände und in der Variantentabelle ohne Gründe. Abweichungen zwischen Soll- und Istmanifest sind nur im Register Betrieb sichtbar.",
+        "recommendation": "Statusleiste auf alle acht Signale erweitern. Karte um UNKNOWN-Anzahl und gebundene Wirkung sowie auslaufende Verpflichtungen ergänzen. Zustand 'noch nicht aufgenommen' und Aufnahmestatus einführen. Entryfreigabe als 'x von y Varianten' mit Gründen im Detail darstellen und Manifestabweichungen auf der Karte signalisieren.",
+        "severity": "P2",
+        "verification": "Abgleich gegen die Signaltabelle der Grundlage §4.9 und die Zustandsliste in §4.2: jedes Signal hat einen benannten Ort in Karte, Leiste oder Variantentabelle."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-009",
+        "impact": "Ein Netto mit fehlender Swap- oder Feequelle kann als vollständiges Netto erscheinen, was faktisch unbekannte Kosten als null behandelt. Das widerspricht Grundlage §4.6 und §8. Die Headline kann das Ergebnis systematisch zu positiv darstellen.",
+        "location": "§3.2; §5 Einleitung und Kennzahlenvertrag",
+        "problem": "Qualitätsstatus sind je Kennzahl vorgesehen, es fehlt aber eine Regel für zusammengesetzte Größen. Offen ist, was Trading-Netto, PF, Winrate oder Expectancy anzeigen, wenn eine Kostenart unbekannt ist, ein Teil der Zyklen nur modelliert ist oder Kosten nur auf Kontoebene unzugeordnet vorliegen. 'Nicht verfügbar' und 'unbekannt' sind nicht voneinander abgegrenzt. Unzugeordnete Kontokosten sind beim PF separat erwähnt, fehlen aber neben dem Headline-Netto.",
+        "recommendation": "Vererbungsregel festlegen: Der schwächste Qualitätsstatus bestimmt die zusammengesetzte Kennzahl, Abdeckung wird genannt. Festlegen, wann ein Wert mit 'mindestens/teilweise' erscheint und wann '—'. 'Nicht verfügbar' und 'unbekannt' definieren. Unzugeordnete Kosten beim Netto im passenden Scope als eigene Zeile zeigen.",
+        "severity": "P2",
+        "verification": "Beispiel einer Legacy-Quelle ohne Swap und mit Kontogebühr ohne Korrelation: Das Konzept muss Anzeige und Status von Netto, PF und Expectancy eindeutig bestimmen."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-010",
+        "impact": "Wer die Aufzählung als abschließend liest, plant Adapter ohne die Grundlage für Cashflow und Frische. Betriebsentscheidungen sind dann in der Incidenthistorie nicht nachvollziehbar.",
+        "location": "§8 Absatz Identitäten und Datenarten; §4 Betrieb & Daten",
+        "problem": "§8 nennt Account-, Fleet-, Variant- und Position-Snapshots sowie Order-, Deal-, Intent- und Incidentereignisse als 'die vorgesehenen Datenarten'. Der Grundlagenkatalog §6 enthält zusätzlich cashflow_event, control_event und telemetry_health. Gerade Cashflowbereinigung, Datenfrische und Lücken hängen von diesen Arten ab. Eine Anzeige der control_events (angefragte, verweigerte und bestätigte Betriebsentscheidungen, Grundlage §4.9) fehlt im Konzept ebenfalls; sie wäre lesend und erzeugt keine Steuerrechte.",
+        "recommendation": "Liste um cashflow_event, control_event und telemetry_health ergänzen oder ausdrücklich auf die Grundlage §6 verweisen. Eine rein lesende Timeline für Betriebsentscheidungen unter Betrieb & Daten aufnehmen.",
+        "severity": "P2",
+        "verification": "Jeder record_type aus Grundlage §6 lässt sich im Konzept mindestens einer Ansicht oder Kennzahl zuordnen."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-011",
+        "impact": "Eine schleichende Verschlechterung der Ausführung ist nur durch das Öffnen einzelner Trades erkennbar. Für die EA-Kontrolle ist das eine relevante Lücke, auch wenn sie den ersten Ausbau nicht blockieren muss.",
+        "location": "§4 Register; §4.2; §5",
+        "problem": "Ausführungsqualität ist nur auf Trade-Ebene als Timeline und über Signal-Fill-Quote sowie Kosten vorgesehen. Es fehlt eine aggregierte Sicht je Flotte oder Variante auf Ablehnungen nach Retcode, Teilfillquote, Latenzen Signal → Send → Antwort → Fill, Slippageverteilung, späte Wirkungen sowie konfigurierte versus beobachtete Gleichzeitigkeit. Die Grundlage §4.5 sieht diese Rohdaten soweit aufgezeichnet vor.",
+        "recommendation": "Einen kompakten Bereich Ausführung im Register Analyse oder Betrieb ergänzen, mit Stichprobe, Zeitpräzision und Capability-Status. Fehlende Referenzen als 'nicht verfügbar' ausweisen und als späteres Paket markieren, falls der Produzent die Daten noch nicht liefert.",
+        "severity": "P2",
+        "verification": "Das Konzept benennt für Ablehnungen, Latenz und Slippage je Kennzahl, Quelle und Mindestvoraussetzung."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-012",
+        "impact": "Der Verlust der Sicht auf eine Flotte mit offenem Risiko kann unter weniger dringlichen Hinweisen stehen.",
+        "location": "§6 Aufmerksamkeit",
+        "problem": "Die Sortierung nach tatsächlicher Wirkung und Gewissheit stuft Datenrückstand grundsätzlich unter Entryblockaden ein. Ein Datenabriss bei offenen Positionen oder UNKNOWN ist aber gerade ein Zustand mit unbekannter Wirkung. Der Ausfall des kritischen Ausführungsjournals (§8) hat keinen Rang in der Reihenfolge.",
+        "recommendation": "Datenrückstand mit offener Exposition oder UNKNOWN sowie Journalausfälle in die oberste Stufe einordnen. Reine Frischehinweise ohne offenes Risiko bleiben niedrig.",
+        "severity": "P3",
+        "verification": "Beispiel einer veralteten Quelle mit offenen Positionen gegenüber einer Entryblockade: Die Rangfolge ist eindeutig und begründet."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-013",
+        "impact": "Statussignale wie Brokerverbindung oder Kernfortschritt können aktueller wirken, als sie sind, und MAE/MFE kann zu genau erscheinen.",
+        "location": "§8 Fünf-Minuten-Vorgabe; §4 Statusleiste",
+        "problem": "'Fünf Minuten für Erfassung und aktive Abrufe' unterscheidet nicht zwischen gesampelten Snapshots und ereignisbasierten Datensätzen wie Deals, Intents und Incidents. Die Gesamtlatenz nach Grundlage §5.2 (Aufzeichnung, Segmentveröffentlichung, Transfer, Verarbeitung, UI-Abfrage) wird nicht übernommen. Erfassung und Abruf können zusammen deutlich über fünf Minuten Alter ergeben. Offen ist auch, ob ein Fünf-Minuten-Pfad für MAE/MFE als 'ausreichend' gilt.",
+        "recommendation": "Je Signal Beobachtungszeit und Alter anzeigen, Ende-zu-Ende-Alter als Kennzahl aufnehmen und klarstellen, dass die Vorgabe das Sampling und den Abruf betrifft, nicht die Zeitstempel der Ereignisse. MAE/MFE bei Fünf-Minuten-Daten als gesampelte Untergrenze bezeichnen.",
+        "severity": "P3",
+        "verification": "Das Konzept nennt für Snapshot und Ereignis getrennt Erfassungsrhythmus und maximal zu erwartendes Alter als beschriftete Beispielwerte."
+      },
+      {
+        "file": "docs/FleetControlDeskKonzept.md",
+        "id": "FCD-014",
+        "impact": "W1-Ziele können in der Darstellung wie Fixed-R-Ziele wirken, und R-Auswertungen verlieren ihren Bezug.",
+        "location": "§4.2 Positions- und Tradedetail",
+        "problem": "Das Positionsdetail übernimmt nicht alle Felder aus Grundlage §4.4. Es fehlen Zielregeln wie W1 samt gebundener Wochenquelle und Signal-ATR, die Einzel- und gewichteten Fillpreise, das Anfangsvolumen sowie der offene Swap mit Bewertungszeit.",
+        "recommendation": "Felder ergänzen oder ausdrücklich auf den Feldkatalog der Grundlage §4.4 verweisen. Die Zielregel als eigene Angabe neben TP führen.",
+        "severity": "P3",
+        "verification": "Feldabgleich des Positionsdetails gegen Grundlage §4.4."
+      }
+    ],
+    "resolved_findings": [],
+    "review_id": "01ce3d1889314561b359628dafff6326",
+    "submission_sha256": "eb094192043163877c940bd5dcb5b8b3c79fa2fe9966f0870e2201be779e6d7c",
+    "summary": "Das Konzept übernimmt die Grundlage in vielen Punkten sauber: Es trennt native Equity von zurechenbarem PnL, verhindert die Dreifachaddition von U/C, behandelt Residuale korrekt, erfindet keine API und keine Steuerrechte und hält den Umfang klein (C5 erfüllt). Vor dem Datenmodell und der Kennzahlenumsetzung sind jedoch fachliche Präzisierungen nötig. Die Bezugseinheit von Flottenkarten und Summen ist bei mehreren Einsätzen unklar. Variante und Revision sind nicht als getrennte Ebenen definiert. Der Tradezyklus ist nicht definiert. Die PnL-/DD-Berechnung hat keine Konsistenzregel zwischen ereignisbasierten Buchungen und gesampelter offener Bewertung. Die benannte Kontoansicht fehlt als spezifizierte Seite. Außerdem verdecken Übersicht und Statusleiste Poolsättigung, UNKNOWN, Altverpflichtungen und den Aufnahmestatus teilweise, und für zusammengesetzte Kennzahlen mit unbekannten Kosten fehlt eine Qualitätsregel. Reines Dokumentreview: keine Tests ausgeführt, keine Implementierungs- oder Liveabnahme.",
+    "unverified": [
+      "Der klickbare UI-Draft wurde nicht eingereicht; Aussagen in §1 und §7 zu Draft-Inhalten, Beispieldaten, Kontrast und fehlenden Aktionen sind ungeprüft.",
+      "Die Office-Vorgabe von fünf Minuten und weitere Office-Projektvorgaben lagen nicht vor; geprüft wurde nur ihre Darstellung im Konzept.",
+      "Der verlinkte Reviewnachweis FleetControlDeskReview.md lag nicht vor.",
+      "Die Aussagen zu TradeZella, Edgewonk und Myfxbook wurden nicht gegen die externen Quellen geprüft.",
+      "Nicht geprüft wurde, ob context/TECHNISCHE_GRUNDLAGE.md inhaltsgleich mit der im Konzept verlinkten lokalen Datei ist; das Konzept nennt dafür keinen Hash.",
+      "Die Primärquellen der Grundlage (M561, M563, M564, Bugakten) lagen nicht vor; BUG-Einordnungen wurden nur gegen die Grundlage abgeglichen.",
+      "Es wurden keine Tests, Laufzeitprüfungen oder API-/MT5-Prüfungen ausgeführt; die Testangaben stammen vom Entwickler."
+    ]
+  },
+  "test_evidence_kind": "developer-reported, not executed by this bridge"
+}

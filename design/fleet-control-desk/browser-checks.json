@@ -1,0 +1,417 @@
+{
+  "checks": [
+    {
+      "view": "overview-desktop",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [
+        {
+          "width": 481,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "seven-day-period",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [
+        {
+          "width": 481,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "orion-overview",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [
+        {
+          "width": 772,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "orion-variants",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "orion-risk",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [
+        {
+          "width": 772,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "orion-journal",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "orion-analysis",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "orion-ops",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "atlas-overview",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [
+        {
+          "width": 772,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "atlas-variants",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "atlas-risk",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [
+        {
+          "width": 772,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "atlas-journal",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "atlas-analysis",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "atlas-ops",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "nova-overview",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [
+        {
+          "width": 772,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "nova-variants",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "nova-risk",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [
+        {
+          "width": 772,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "nova-journal",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "nova-analysis",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "nova-ops",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "vega-overview",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [
+        {
+          "width": 772,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "vega-variants",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "vega-risk",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [
+        {
+          "width": 772,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "vega-journal",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "vega-analysis",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "vega-ops",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "global-journal",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "global-risk",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "global-ops",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [],
+      "small": 0
+    },
+    {
+      "view": "global-fleets",
+      "w": 1024,
+      "scroll": 1024,
+      "empty": false,
+      "charts": [
+        {
+          "width": 481,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "overview-736",
+      "w": 704,
+      "scroll": 704,
+      "empty": false,
+      "charts": [
+        {
+          "width": 494,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "nova-736",
+      "w": 704,
+      "scroll": 704,
+      "empty": false,
+      "charts": [
+        {
+          "width": 494,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "nova-risk-736",
+      "w": 704,
+      "scroll": 704,
+      "empty": false,
+      "charts": [
+        {
+          "width": 494,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "overview-390",
+      "w": 358,
+      "scroll": 358,
+      "empty": false,
+      "charts": [
+        {
+          "width": 296,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "nova-390",
+      "w": 358,
+      "scroll": 358,
+      "empty": false,
+      "charts": [
+        {
+          "width": 296,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "nova-risk-390",
+      "w": 358,
+      "scroll": 358,
+      "empty": false,
+      "charts": [
+        {
+          "width": 296,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "overview-320",
+      "w": 288,
+      "scroll": 288,
+      "empty": false,
+      "charts": [
+        {
+          "width": 226,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "nova-320",
+      "w": 288,
+      "scroll": 288,
+      "empty": false,
+      "charts": [
+        {
+          "width": 226,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    },
+    {
+      "view": "nova-risk-320",
+      "w": 288,
+      "scroll": 288,
+      "empty": false,
+      "charts": [
+        {
+          "width": 226,
+          "paths": 2
+        }
+      ],
+      "small": 0
+    }
+  ],
+  "page_errors": []
+}

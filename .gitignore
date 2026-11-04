@@ -1,0 +1,20 @@
+# Lokale Betriebssystemdateien
+.DS_Store
+Thumbs.db
+
+# Zugangsdaten und lokale Konfiguration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Geschützte Geschäftsdaten, Laufzeit und Arbeitsdateien
+data/
+private/
+runtime/
+backups/
+logs/
+work/
+*.log
