@@ -16,6 +16,8 @@ private/
 runtime/
 backups/
 logs/
+!TradegazingOfficeDesk/app/api/missions/logs/
+!TradegazingOfficeDesk/app/api/missions/logs/route.ts
 work/
 *.log
 .office-desk-data/

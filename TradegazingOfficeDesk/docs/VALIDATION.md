@@ -24,3 +24,7 @@ Kleinste Korrektur: reine Bug-Toolschemas von den serverseitigen Aufrufen trenne
 - Vorhandene gepinnte Dependencyinstallation wurde per unabhängiger Dateikopie von Aunerio wiederverwendet; Paketversionen unverändert. Die Lizenz-/Noticeinventur ist mit dem Office-Lockfile neu erzeugt. Ein frisches npm-ci wurde in dieser Session nicht durchgeführt. Die im Manifest als OPEN geführten optionalen/fehlenden Nachweise bleiben offen; keine neue pauschale Rechtsabnahme.
 
 Unabhängiges Dreamteam-Review: [Entscheidung, Paketbindung und offene Befunde](REVIEW.md). CHANGES_REQUESTED; keine vollständige unabhängige Abnahme. Es prüft Textpakete und führt diese Tests nicht selbst aus. Nachträgliche Präzisierungen dieses Abschlussnachweises sind keine neue Reviewrunde und verändern keine Implementierungs- oder Testlogik.
+
+## Git-Übernahme
+
+OFFICE-BUG-0012: Der erste Git-Stand schloss die bereits getestete und im Reviewpaket enthaltene Route `app/api/missions/logs/route.ts` aufgrund der bestehenden Regel `logs/` aus. Vor Übernahme korrigiert: gezielte Ausnahme nur für diesen API-Quellpfad. Anwendungscode und vorhandene Tests/Review bleiben unverändert; private Logs bleiben ausgeschlossen. Der notwendige Packaging-Abgleich verwendet Git-Index und den bereits geprüften Routeninhalt, keine neue Gesamtqualifikation.
