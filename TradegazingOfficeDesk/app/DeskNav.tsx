@@ -1,49 +1,45 @@
 "use client";
-import { useEffect, useRef } from 'react';
+import { useRef, useState } from 'react';
 
-type Section = 'missions' | 'context' | 'legal' | 'bugs' | 'fleet';
+export type Section = 'missions' | 'context' | 'legal' | 'bugs' | 'fleet';
+
 const groups = [
   { label: 'Controlling', items: [
-    { id: 'fleet', label: 'Fleet Control', href: '/controlling/fleet-control' },
+    { id: 'fleet', label: 'Fleet Control', href: '/controlling/fleet-control', icon: '◈' },
   ] },
   { label: 'Projektmanagement', items: [
-    { id: 'missions', label: 'Mission Log', href: '/missions' },
-    { id: 'context', label: 'Context Core', href: '/context' },
-    { id: 'bugs', label: 'Bug Board', href: '/bugs' },
-    { id: 'legal', label: 'Legal & Lizenzen', href: '/legal' },
+    { id: 'missions', label: 'Mission Log', href: '/missions', icon: '▤' },
+    { id: 'context', label: 'Context Core', href: '/context', icon: '◇' },
+    { id: 'bugs', label: 'Bug Board', href: '/bugs', icon: '◎' },
+    { id: 'legal', label: 'Legal & Lizenzen', href: '/legal', icon: '▣' },
   ] },
 ];
 
-export default function DeskNav({ current }: { current: Section }) {
-  const navigation = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const closeOutside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !navigation.current?.contains(event.target)) {
-        navigation.current?.querySelectorAll('details[open]').forEach(item => item.removeAttribute('open'));
-      }
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      const open = navigation.current?.querySelector<HTMLDetailsElement>('details[open]');
-      if (open) {
-        const restoreFocus = open.contains(document.activeElement);
-        open.open = false;
-        if (restoreFocus) open.querySelector('summary')?.focus();
-      }
-    };
-    document.addEventListener('pointerdown', closeOutside);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOutside);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, []);
-  return <nav ref={navigation} className="desk-nav" aria-label="Projektbereiche">
-    {groups.map(group => <details key={group.label} name="office-desk-navigation" className="desk-nav-group" data-active={group.items.some(item => item.id === current)}>
-      <summary>{group.label}<span aria-hidden="true">⌄</span></summary>
-      <ul className="desk-subnav" aria-label={group.label}>
-        {group.items.map(item => <li key={item.id}><a href={item.href} aria-current={current === item.id ? 'page' : undefined}>{item.label}</a></li>)}
-      </ul>
-    </details>)}
-  </nav>;
+export default function DeskNav({ current, title, detail }: { current: Section; title: string; detail: boolean }) {
+  const [open, setOpen] = useState(false);
+  const toggle = useRef<HTMLButtonElement>(null);
+
+  return <div className="office-menu" onKeyDown={event => {
+    if (event.key === 'Escape' && open && toggle.current?.getClientRects().length) {
+      setOpen(false);
+      toggle.current.focus();
+    }
+  }}>
+    <button ref={toggle} className="office-menu-toggle" type="button" aria-controls="office-navigation"
+      aria-expanded={open} onClick={() => setOpen(!open)}>
+      Navigation <span>{title}</span> <span aria-hidden="true">{open ? '−' : '+'}</span>
+    </button>
+    <nav className="office-nav" id="office-navigation" data-open={open} aria-label="Desk-Bereiche">
+      {groups.map(group => <div className="office-nav-group" key={group.label}>
+        <p>{group.label}</p>
+        <ul aria-label={group.label}>
+          {group.items.map(item => <li key={item.id}>
+            <a href={item.href} aria-current={current === item.id ? (detail ? 'location' : 'page') : undefined}>
+              <span aria-hidden="true">{item.icon}</span> {item.label}
+            </a>
+          </li>)}
+        </ul>
+      </div>)}
+    </nav>
+  </div>;
 }

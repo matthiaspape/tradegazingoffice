@@ -2,11 +2,10 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- plain anchors avoid a vinext client hydration conflict */
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { BrandIdentity, ThemeToggle } from "./BrandIdentity";
+import DeskShell from './DeskShell';
 import { evidenceUrl } from "./evidence-links";
 import { browserModelContext, registerMissionTools } from "./webmcp";
 import ExecutionPlanner, { emptyExecution, executionPayload } from "./ExecutionPlanner";
-import DeskNav from './DeskNav';
 
 type MissionStatus = "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "DISCARDED";
 type MissionModel = "gpt-6-astra" | "gpt-5.6-luna" | "gpt-5.6-terra" | "gpt-5.6-sol";
@@ -175,9 +174,7 @@ export default function MissionLog() {
     } catch (error) { setError(errorMessage(error)); } finally { setCreating(false); }
   }
 
-  return <main className="mission-page">
-    <header className="topbar"><BrandIdentity section="Mission Log" /><span className="local-badge"><i /> Lokal auf deinem Mac</span><ThemeToggle /></header>
-    <DeskNav current="missions" />
+  return <DeskShell current="missions">
     <section className="mission-hero"><div><p className="kicker">TRADEGAZING OFFICE · PROJEKTORGANISATION</p><h1>Mission Log<span>.</span></h1><p>Ideen entwickeln. Projekte planen. Fortschritt festhalten.</p></div><button disabled={loading} aria-expanded={newOpen} onClick={() => setNewOpen(!newOpen)}>{newOpen ? "Schließen" : "+ Neue Mission"}</button></section>
     {error && <div className="error" role="alert">{error} <button onClick={() => window.location.reload()}>Neu laden</button></div>}
     <section className="mission-overview">
@@ -188,5 +185,5 @@ export default function MissionLog() {
     {newOpen && <form className="new-mission" onSubmit={create}><div><p className="eyebrow">Neue Mission</p><h3>Nächstes Ziel</h3></div><div className="mission-field"><label htmlFor="new-mission-title">Titel</label><input id="new-mission-title" maxLength={120} required value={title} onChange={(event) => setTitle(event.target.value)} /></div><div className="mission-field"><label htmlFor="new-mission-objective">Ziel</label><input id="new-mission-objective" maxLength={300} required value={objective} onChange={(event) => setObjective(event.target.value)} /></div><div className="mission-field"><label htmlFor="new-mission-type">Missionstyp</label><select id="new-mission-type" value={newMissionType} onChange={(event) => setNewMissionType(event.target.value as MissionType)}>{missionTypeOrder.map((item) => <option key={item} value={item}>{missionTypeText[item]}</option>)}</select></div><div className="mission-field"><label htmlFor="new-mission-tags">Tags</label><input id="new-mission-tags" value={newTags} onChange={(event) => setNewTags(event.target.value)} placeholder="DESK, FLEET_CONTROL" /></div><div className="mission-field full"><label htmlFor="new-mission-briefing">Erstes Briefing</label><textarea id="new-mission-briefing" maxLength={4000} value={briefing} onChange={(event) => setBriefing(event.target.value)} /></div><ExecutionPlanner value={execution} onChange={setExecution} /><button disabled={creating}>{creating ? "Wird angelegt …" : "Mission anlegen"}</button></form>}
     <section className="mission-board"><header><div><p className="eyebrow">PROJEKTLOGBUCH</p><h3>Unsere Missionen</h3></div><span>{visible.length} Einträge</span></header>{loading ? <p className="loading">Missionslog wird geladen …</p> : !visible.length ? <div className="mission-empty"><span aria-hidden="true">↗</span><h3>{missions.length ? "Keine passenden Missionen" : "Hier beginnt unser Weg."}</h3><p>{missions.length ? "Passe die Suche oder die Filter an." : "Lege die erste Mission an – eine Idee, eine offene Frage oder den nächsten Entwicklungsschritt."}</p>{!missions.length && <button onClick={() => setNewOpen(true)}>+ Erste Mission anlegen</button>}</div> : visible.map((mission) => <MissionCard key={mission.id} mission={mission} targeted={mission.mission_number === deepLinkMission} entries={logs.filter((entry) => entry.mission_id === mission.id)} onSaved={async (saved) => { setMissions(current => current.map(item => item.id === saved.id ? saved : item)); await refresh(); }} onLogAdded={async () => { await refresh(); }} />)}</section>
     <footer className="footer"><span>Tradegazing Office Desk <b>v0.1</b></span><span>Idee → Mission → Ergebnis → Entscheidung</span></footer>
-  </main>;
+  </DeskShell>;
 }

@@ -1,8 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-html-link-for-pages -- local full-page links */
 import { FormEvent,useEffect,useRef,useState } from 'react';
-import { BrandIdentity, ThemeToggle } from './BrandIdentity';
-import DeskNav from './DeskNav';
+import DeskShell from './DeskShell';
 import { ensureDeskSession } from './desk-client';
 import { bugLevels,bugStatuses,bugDecisions,bugEvidenceStates,bugComponents,bugLabels } from '../ops/bug-contract.mjs';
 
@@ -120,7 +119,7 @@ export default function BugBoard() {
       submission.current=null;select(payload.id);setRefresh(v=>v+1);
     }catch(e){setError(e instanceof Error?e.message:'Speichern fehlgeschlagen.');}finally{setBusy(false);}
   }
-  return <main className="mission-page bug-page"><header className="topbar"><BrandIdentity section="Projektmanagement"/><span className="local-badge"><i/>Lokal · Office</span><ThemeToggle/></header><DeskNav current="bugs"/>
+  return <DeskShell current="bugs" className="bug-page">
     <section className="bug-hero"><div><p className="eyebrow">Befunde behalten. Suche fortsetzen.</p><h1>Bug Board</h1><p>Nur Bugs, die den konkreten Lauf blockieren, dürfen während der Suche behoben werden. Alle anderen werden hier erfasst und zurückgestellt.</p></div><button onClick={()=>{setDraft(newBug());setOccurrence(newOccurrence(filters.mission_id));setMode('create');setError('');}} disabled={busy}>+ Bug erfassen</button></section>
     <p className="bug-policy">Ein hohes Risiko allein erlaubt keine Reparatur. Laufentscheidung und Status starten keine Prozesse und ändern keine Freigaben.</p>
     {missionError&&<p role="status" className="bug-hint">{missionError} Allgemeine Erfassung bleibt möglich.</p>}
@@ -131,5 +130,5 @@ export default function BugBoard() {
     {loading?<p role="status">Bug Board wird geladen …</p>:data&&<>{data.total?<><BugTable bugs={data.bugs} onSelect={select}/><div className="bug-pagination"><span>{offset+1}–{Math.min(offset+50,data.total)} von {data.total} Bugs</span><button disabled={offset===0} onClick={()=>setOffset(v=>Math.max(0,v-50))}>Zurück</button><button disabled={!data.has_more} onClick={()=>setOffset(v=>v+50)}>Weiter</button></div></>:<div className="bug-empty"><h2>Keine Bugs in dieser Auswahl</h2><p>Neue Befunde mit Beleg und Einschätzung erfassen. Bekannte Bugs über die Suche finden und um weitere Vorkommen ergänzen.</p></div>}</>}
     {selected&&!detail&&<p role="status">Bugdetail wird geladen …</p>}
     {detail&&<section className="bug-detail"><div className="bug-actions"><button onClick={()=>{const d=newBug();for(const key of Object.keys(d) as (keyof Draft)[])Object.assign(d,{[key]:detail[key]});setDraft(d);setEditBase({id:detail.id,revision:detail.revision});setMode('edit');}} disabled={busy}>Bewertung bearbeiten</button><button onClick={()=>{const current=detail.current_occurrences.find(o=>!filters.mission_id||o.mission_id===filters.mission_id);setOccurrence(current?Object.fromEntries(Object.keys(newOccurrence()).map(k=>[k,current[k as keyof Occurrence]||''])) as Occurrence:newOccurrence(filters.mission_id));setMode('occurrence');}} disabled={busy||detail.status==='DUPLIKAT'}>Vorkommen ergänzen</button><button onClick={()=>select('')}>Detail schließen</button></div><BugDetail bug={detail} missions={missions}/></section>}
-  </main>;
+  </DeskShell>;
 }

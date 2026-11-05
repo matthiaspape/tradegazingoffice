@@ -19,11 +19,18 @@ async def main():
         errors = []
         page.on('pageerror', lambda e: errors.append(str(e)))
         await page.goto(BASE)
-        await expect(page.get_by_role('heading', name='Fleet Control.')).to_be_visible()
-        navigation = page.get_by_role('navigation', name='Projektbereiche')
-        await expect(navigation.locator('summary')).to_have_text(['Controlling⌄', 'Projektmanagement⌄'])
-        await navigation.locator('summary').filter(has_text='Projektmanagement').click()
-        await page.get_by_role('link', name='Mission Log', exact=True).click()
+        await expect(page.get_by_role('heading', name='Fleet Control', exact=True)).to_be_visible()
+        navigation = page.get_by_role('navigation', name='Desk-Bereiche')
+        await expect(navigation.locator('.office-nav-group > p')).to_have_text(['Controlling', 'Projektmanagement'])
+        metrics = page.get_by_role('region', name='Wichtigste Kennzahlen')
+        await expect(metrics.locator('.fleet-coverage')).to_have_text([
+            '2 von 3 Flotten · Teilumfang', '2 von 3 Flotten · Teilumfang',
+            '2 von 3 Flotten · Teilumfang', '3 von 3 Flotten · Abgedeckt',
+        ])
+        await page.get_by_role('link', name='Orion öffnen').click()
+        await expect(page.get_by_role('heading', name='Orion', exact=True)).to_be_visible()
+        await expect(page.locator('#fleet-performance .fleet-coverage').first).to_have_text('0 von 1 Einsatz · Kein aktueller Wert')
+        await navigation.get_by_role('link', name='Mission Log', exact=True).click()
         await expect(page).to_have_url(BASE+'/missions')
         await expect(page.get_by_role('button', name='+ Neue Mission')).to_be_enabled()
         empty = await page.request.get(BASE+'/api/missions')
@@ -44,8 +51,7 @@ async def main():
         await page.get_by_label('Status', exact=True).select_option('IN_PROGRESS')
         await page.get_by_role('button', name='Mission speichern', exact=True).click()
         await expect(page.locator('.notice')).to_contain_text('Mission gespeichert')
-        await page.get_by_role('navigation', name='Projektbereiche').locator('summary').filter(has_text='Projektmanagement').click()
-        await page.get_by_role('link', name='Bug Board', exact=True).click()
+        await navigation.get_by_role('link', name='Bug Board', exact=True).click()
         await expect(page.get_by_role('heading', name='Keine Bugs in dieser Auswahl')).to_be_visible()
         await page.get_by_role('button', name='+ Bug erfassen', exact=True).click()
         fields = {

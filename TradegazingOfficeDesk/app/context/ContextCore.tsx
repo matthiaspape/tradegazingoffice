@@ -1,7 +1,6 @@
 "use client";
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { BrandIdentity, ThemeToggle } from '../BrandIdentity';
-import DeskNav from '../DeskNav';
+import DeskShell from '../DeskShell';
 import { projectDocumentUrl } from '../evidence-links';
 import { ensureDeskSession, invokeDeskTool } from '../desk-client';
 import { browserModelContext, registerMissionTools } from '../webmcp';
@@ -160,9 +159,7 @@ export default function ContextCore({ legal = false }: { legal?: boolean }) {
       }
     } catch (error) { setError(message(error)); }
   }
-  return <main className="mission-page context-page">
-    <header className="topbar"><BrandIdentity section={legal ? "Legal & Lizenzen" : "Projektwissen"} /><div className="local-badge"><i /> Lokal gespeichert</div><ThemeToggle /></header>
-    <DeskNav current={legal ? "legal" : "context"} />
+  return <DeskShell current={legal ? "legal" : "context"} className="context-page">
     <section className="context-heading"><div><p className="kicker">{legal ? "Herkunft · Nutzungsrechte · offene Fragen" : "Gemeinsames Projektwissen"}</p><h1>{legal ? "Legal & Lizenzen" : "Context Core"}</h1></div><div><button onClick={showOverview}>{legal ? "Registerübersicht" : "Projektüberblick"}</button><button className="context-primary" disabled={!ready} onClick={() => { showOverview(); setCreating(true); setNotice(''); }}>{legal ? "+ Lizenz / Frage erfassen" : "+ Wissen festhalten"}</button></div></section>
     {error && <p className="error" role="alert">{error} <button onClick={() => window.location.reload()}>Seite neu laden</button></p>}
     {notice && <p className="notice" role="status">{notice}</p>}
@@ -208,5 +205,5 @@ export default function ContextCore({ legal = false }: { legal?: boolean }) {
       </section>
     </div>
     <footer className="footer"><span>Tradegazing Office Desk <b>v0.1</b></span><span>Wissen · Herkunft · Entwicklung</span></footer>
-  </main>;
+  </DeskShell>;
 }
