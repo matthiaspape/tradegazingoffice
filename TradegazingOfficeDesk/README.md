@@ -6,6 +6,8 @@ Lokales Projektmanagement für Tradegazing Office: **Mission Log, Context Core, 
 
 **Controlling** steht vor **Projektmanagement**. Fleet Control ist die Startseite unter `/` und über den Untereintrag unter `/controlling/fleet-control` erreichbar. Die Seite dient vorerst als Platzhalter. **Projektmanagement** enthält Mission Log, Context Core, Bug Board und Legal & Lizenzen.
 
+Das [gemeinsame UI/UX-Zielbild](../docs/TradegazingOfficeDeskUX.md) und die [statische Vorschau](../design/tradegazing-office-desk/index.html) beschreiben die geplante Gestaltung beider Bereiche.
+
 ## Start
 
 Node.js 24+ und npm bei einer frischen Installation:

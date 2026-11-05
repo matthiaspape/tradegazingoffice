@@ -10,6 +10,8 @@ Das lokale Desk verbindet Controlling und Projektmanagement. Aus dem Aunerio-Des
 
 **Controlling** steht vor **Projektmanagement**. [Fleet Control](http://127.0.0.1:43120/) ist die Startseite und dient zunächst als Platzhalter. Unter **Projektmanagement** liegen [Mission Log](http://127.0.0.1:43120/missions), Context Core, [Bug Board](http://127.0.0.1:43120/bugs) und Legal & Lizenzen.
 
+Das [gemeinsame UI/UX-Konzept](docs/TradegazingOfficeDeskUX.md) entwirft die spätere Oberfläche für beide Bereiche mit originaler Tradegazing-CI. Die [klickbare Designvorschau](design/tradegazing-office-desk/index.html) lässt sich nach dem Checkout direkt im Browser öffnen und verwendet fiktive Beispieldaten.
+
 Start, MCP/CLI, Datenablage und Prüfbelege: [TradegazingOfficeDesk/README.md](TradegazingOfficeDesk/README.md). Auf diesem Mac: `cd TradegazingOfficeDesk` und `./desk launch`; die Abhängigkeiten, Einrichtung und der Build müssen vorhanden sein. Die lokale Projektmanagement-Laufzeit ist Node.js 24+ mit React/vinext und SQLite.
 
 Arbeitsweise seit Nutzerauftrag vom 04.11.2026: Neue Aufgaben erhalten automatisch eine thematische Mission; abgeschlossene Zwischenstände werden zeitnah committet. Nach fachlichem Abschluss folgen geordnetes Cleanup, finaler Commit/Push und administrativer Missionsabschluss. Details und Grenzen stehen in [AGENTS.md](AGENTS.md) und im [Missionsworkflow](TradegazingOfficeDesk/docs/MISSION_WORKFLOW.md).

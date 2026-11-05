@@ -67,3 +67,23 @@ Produktionsansichten trennen Live, Demo und Research. Summen verwenden kompatibl
 3. **Journal und Querverweise.** Risiko- und Journaltiefe, Variantenanalysen und belegte Links zum Bug Board ergänzen. Projekt-Writes bleiben bewusste, serverseitig autorisierte Projektaktionen. Die Fleet-Oberfläche dient der Beobachtung.
 
 Die lokale Anwendung zeigt bis zur beauftragten Umsetzung den bisherigen Platzhalter. Die Vorschau ist eine eigenständige HTML-Datei mit lokalen Styles, Script und Original-Logos. Alle Kennzahlen, Zeitpunkte und Projekte darin sind fiktiv. Betriebsdaten, private Zugänge und Freigaben liegen außerhalb der Vorschau. Die fachlichen Voraussetzungen stehen in der [technischen Grundlage](references/FLEET_CONTROL_DESK_TECHNISCHE_GRUNDLAGE.md) und im [Dashboard-Plan](DashboardPlan.md).
+
+## Prüfung der Vorschau
+
+- Headless Chrome bei 1440, 390 und 320 px. Geprüft wurden Menüfolge, beide Original-Logos, Flottenbefund → Bug Board → Mission Log, Rückkehr über das Logo, Direktlinks, Browserverlauf und Tastaturfokus. Kein horizontaler Seitenüberlauf, keine JavaScript-Fehler und keine HTTP(S)-Anfragen.
+- axe-core meldete in 36 Kombinationen aus sechs Ansichten, drei Breiten und zwei Farbmodi keine automatisch erkannten Verstöße. Eine vollständige manuelle Barrierefreiheitsprüfung gehört zur Umsetzung.
+
+## Dreamteam-Review und offene Punkte
+
+Claude prüfte das Konzept und den Quelltext der Vorschau unabhängig für Commit `6bfd0c6`. Dreamteam-Review `7b1f91ccbe454ff8923afc52c0119c6f`, Paket-SHA256 `21c0c5e5ab9852deb7f16ee65c1c4d6c92bb44eaf2af85c34ca91344dc11a056`. Entscheidung **CHANGES_REQUESTED**. C1 Navigation, C2 Marke und Designsystem und C4 Vorschau und Grenzen bestanden. C3 Kennzahlendarstellung blieb offen. Die Browser- und axe-Prüfungen sind Entwicklerbelege. Claude prüfte weder die gerenderte Ansicht noch die Logo-Dateien direkt.
+
+| Bug Board | Dreamteam | Auswirkung und Wahrscheinlichkeit | Gesamtrisiko |
+| --- | --- | --- | --- |
+| OFFICE-BUG-0013 | F-001 bis F-004 | Teilabdeckung an den Kacheln, bindendes UNKNOWN, letzter Orion-Messwert und Nova-DD fehlen oder sind erst an anderer Stelle sichtbar. Fehlinterpretation der Summen ist plausibel. Wahrscheinlichkeit mittel. | Mittel |
+| OFFICE-BUG-0014 | F-005, F-006 | Bei 640 und 820 px ragt eine Kennzahlenbeschriftung in die Nachbarspalte. Die SVG-Achsen sind bei 320 und 390 px rund 5–7 px klein. Benannte Segmente mit Zeitgrenzen fehlen. Eintritt bei betroffenen Breiten reproduziert und hoch. | Mittel |
+| OFFICE-BUG-0015 | F-007, F-014 | Flottenübergreifende Ziele und Detailregister brauchen eigene Scope-Regeln und klarere Navigationssemantik. Unklare Orientierung in einer späteren Umsetzung ist plausibel. Wahrscheinlichkeit mittel. | Mittel |
+| OFFICE-BUG-0016 | F-008, F-011, F-013 | Demo-Hinweis kann beim Scrollen verschwinden. Theme-Start und Speicherung sind für die Umsetzung offen. Die Vorschau braucht Styles, Script und Logos aus dem Checkout. Missverständnisse bei Ausschnitten oder Einzeldatei plausibel. Wahrscheinlichkeit mittel. | Niedrig |
+| OFFICE-BUG-0017 | F-009, F-010 | Der Zusammenhang von UNKNOWN und Reservierung, der Beispiel-Befundkontext und die Begriffe für Broker- und Finanzbuchung sind zu präzisieren. Rückfragen beim Lesen sind plausibel. Wahrscheinlichkeit mittel. | Niedrig |
+| OFFICE-BUG-0018 | F-012 | Der Skip-Link kann beim Neuladen den Nova-Kontext verlieren. Die Abfolge ist reproduziert und betrifft einen seltenen Navigationspfad. Wahrscheinlichkeit niedrig. | Niedrig |
+
+Die Befunde bleiben für eine spätere UI-Umsetzung zurückgestellt. Sie betreffen die statische Vorschau oder die Detaillierung des Zielbilds. Der Konzeptauftrag kann damit abgeschlossen werden. Das frühere Fleet-Control-Review bleibt separat dokumentiert. [Prüfbelege des ursprünglichen Entwurfs](FleetControlDeskReview.md)

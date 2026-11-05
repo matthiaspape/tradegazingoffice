@@ -2,6 +2,8 @@
 
 Stand: 04.11.2026 · Version 0.2 · Produkt- und Designentwurf mit Präzisierungen aus dem Dreamteam-Review
 
+Das [gemeinsame UI/UX-Zielbild des Office Desk](TradegazingOfficeDeskUX.md) ordnet die Fleet-Navigation als Controlling-Bereich in das bestehende Desk ein. Die fachlichen Kennzahlen und Datenregeln stehen in diesem Dokument.
+
 Fleet Control Desk ist die private Kontrollplattform für die entwickelten Flotten-EAs. Der Einstieg beantwortet drei Fragen: **Welche Flotte verdient Geld? Welches Risiko besteht? Wo braucht der Betrieb Aufmerksamkeit?** Die Detailseiten erklären die Beiträge einzelner Strategien, die tatsächliche Ausführung und die Herkunft der Zahlen.
 
 Der erste Ausbau liest Daten. Der grafische Draft verwendet ausschließlich fiktive Beispieldaten. Er ist keine Liveanbindung. Die gemeinsame neue Monitoring-API aus M563/M561 ist laut technischer Grundlage noch nicht vollständig implementiert und abgenommen. Name, Hierarchie und gewünschte Ansichten stammen aus dem Nutzerauftrag; die konkrete Anordnung und Kennzahlenauswahl sind Vorschläge.

@@ -728,6 +728,8 @@ Das Projektmanagement organisiert Entwicklungsarbeit und Befunde; es hat keine B
 
 In der Office-Navigation steht „Controlling“ vor „Projektmanagement“. Fleet Control ist die Startseite unter `/` und auch unter `/controlling/fleet-control` erreichbar. Die Seite dient vorerst als Platzhalter. Unter „Projektmanagement“ liegen Mission Log (`/missions`), Context Core, Bug Board und Legal & Lizenzen.
 
+Das [gemeinsame UI/UX-Zielbild vom 05.11.2026](docs/TradegazingOfficeDeskUX.md) verbindet diese Bereiche visuell und beschreibt den Weg vom Flottenbefund zum Projektmanagement. Der Prototyp ist eine eigenständige Designvorschau. Der spätere Fleet-Zugriff ist lesend vorgesehen; ein bewusst gepflegter Projektbefund bleibt ein Vorgang im Bug Board.
+
 Zusätzliche dauerhafte Nutzervorgabe vom 04.11.2026: Der bearbeitende Agent legt bei neuen inhaltlichen Aufgaben automatisch thematische Missionen an, committet abgeschlossene Zwischenstände zeitnah und erledigt nach fachlichem Abschluss Cleanup und Push. Fortsetzungen bleiben in ihrer Mission; fremde Arbeit, benötigte Belege und ausdrückliche Nutzerpausen bleiben erhalten. Dies ist ein Agentenworkflow gemäß AGENTS.md und Missionsworkflow, kein Hintergrunddienst oder operativer Prozessstart.
 
 ### Ergänzung vom 04.11.2026: Fleet Control Desk
