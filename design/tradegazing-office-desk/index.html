@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fleet Control · Tradegazing Office Desk</title>
+  <link rel="stylesheet" href="desk.css">
+  <script src="desk.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Zum Inhalt</a>
+  <aside class="sidebar">
+    <a class="brand" href="#fleet" aria-label="Tradegazing Office Desk Startseite">
+      <img class="logo-dark" src="../../TradegazingOfficeDesk/public/brand/tradegazing-logo-dark.svg" alt="Tradegazing" width="164">
+      <img class="logo-light" src="../../TradegazingOfficeDesk/public/brand/tradegazing-logo-light.svg" alt="Tradegazing" width="164">
+      <span>OFFICE DESK</span>
+    </a>
+    <details class="menu" open>
+      <summary>Navigation <span id="menu-current">Fleet Control</span></summary>
+      <nav aria-label="Desk-Bereiche">
+        <p class="label">Controlling</p>
+        <a href="#fleet"><span aria-hidden="true">◈</span> Fleet Control</a>
+        <p class="label">Projektmanagement</p>
+        <a href="#missions"><span aria-hidden="true">▤</span> Mission Log</a>
+        <a href="#context"><span aria-hidden="true">◇</span> Context Core</a>
+        <a href="#bugs"><span aria-hidden="true">◎</span> Bug Board</a>
+        <a href="#legal"><span aria-hidden="true">▣</span> Legal &amp; Lizenzen</a>
+      </nav>
+    </details>
+    <p class="sidebar-note"><span aria-hidden="true"></span> Lokaler UI/UX-Entwurf</p>
+  </aside>
+
+  <main id="main" tabindex="-1">
+    <header class="topbar">
+      <p id="breadcrumb">Controlling <span>/</span> Fleet Control</p>
+      <div class="top-actions">
+        <span class="chip demo">Fiktive Beispieldaten</span>
+        <button id="theme" type="button">Helles Design</button>
+      </div>
+    </header>
+    <noscript><p>JavaScript ermöglicht den Ansichtswechsel und das helle Design.</p></noscript>
+
+    <section id="view-fleet" class="view" aria-labelledby="title-fleet">
+      <header class="hero fleet-hero">
+        <p class="label">01 / Controlling</p>
+        <h1 id="title-fleet" tabindex="-1">Fleet Control</h1>
+        <p>Ergebnis, Risiko und Betriebszustand deiner EA-Flotten.</p>
+        <ul class="scope" aria-label="Datenausschnitt">
+          <li>Demo</li><li>1.–5. Nov. 2026</li><li>Europe/Berlin</li><li>EUR</li><li>Stand 05.11. · 09:35</li>
+        </ul>
+      </header>
+
+      <section class="stats" aria-label="Wichtigste Kennzahlen">
+        <article class="panel metric"><h2>Trading-Netto</h2><strong class="positive">+2.480 €</strong><p>+2.150 € gebucht · +330 € offen¹</p></article>
+        <article class="panel metric"><h2>Max. beob. PnL-Drawdown</h2><strong>720 €</strong><p>5-Min.-Raster · letztes Segment</p></article>
+        <article class="panel metric"><h2>Gebundenes Stoprisiko</h2><strong>3.480 <small>/ 6.000 €</small></strong><p>U/C · 1 Pool am Limit</p></article>
+        <article class="panel metric"><h2>Aufmerksamkeit</h2><strong>2 <small>Flotten</small></strong><p>1 Poolgrenze · 1 veraltete Quelle</p></article>
+      </section>
+
+      <div class="signal-grid">
+        <figure class="panel performance">
+          <figcaption>
+            <div><p class="label">Zurechenbarer Verlauf</p><h2>Trading-Netto</h2></div>
+            <span class="chip">2 von 3 Flotten · Teilumfang</span>
+          </figcaption>
+          <svg class="chart" viewBox="0 0 650 198" role="img" aria-labelledby="chart-title chart-desc">
+            <title id="chart-title">Beispiel für zwei belegte PnL-Segmente in Euro</title>
+            <desc id="chart-desc">Die Kurve hat eine Erfassungslücke. Im letzten Segment fällt sie vom Hoch um 720 Euro und endet bei plus 2.480 Euro.</desc>
+            <defs>
+              <linearGradient id="area" x1="0" x2="0" y1="0" y2="1" gradientUnits="objectBoundingBox">
+                <stop stop-color="var(--teal)" stop-opacity=".26"/>
+                <stop offset="1" stop-color="var(--teal)" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path class="gridlines" d="M55 24H635 M55 70H635 M55 116H635 M55 162H635"/>
+            <path fill="url(#area)" d="M55 162L106 150 137 155 185 111 224 115 260 91V162ZM301 79L345 77 385 30.9 412 48 450 64.02 482 59 519 42 551 50 596 38 635 47.92V162H301Z"/>
+            <path class="graphline" d="M55 162L106 150 137 155 185 111 224 115 260 91 M301 79L345 77 385 30.9 412 48 450 64.02 482 59 519 42 551 50 596 38 635 47.92"/>
+            <path class="gap" d="M280 22V162"/>
+            <g class="chart-labels">
+              <text x="1" y="29">3.000</text><text x="1" y="75">2.000</text><text x="1" y="121">1.000</text><text x="29" y="167">0</text>
+              <text x="55" y="193">01.11.</text><text x="259" y="193">Lücke</text><text x="581" y="193">05.11.</text>
+            </g>
+          </svg>
+          <p class="footnote">¹ Periodenbeiträge aus Buchungen und Veränderung der offenen Bewertung. Orion fehlt in den Summen.</p>
+        </figure>
+
+        <section class="panel attention" aria-labelledby="attention-title">
+          <p class="label">Prioritäten</p><h2 id="attention-title">Aufmerksamkeit</h2>
+          <a href="#nova-risk" class="incident"><span class="chip warn">Risiko</span><strong>Nova · Pool am Limit</strong><small>1.200 € von 1.200 € gebunden</small></a>
+          <a href="#orion" class="incident"><span class="chip danger">Datenqualität</span><strong>Orion · Quelle veraltet</strong><small>Letzte Beobachtung 08:55</small></a>
+        </section>
+      </div>
+
+      <section class="fleets" aria-labelledby="fleets-title">
+        <header class="section-head"><div><p class="label">Flottenübersicht</p><h2 id="fleets-title">Deine Flotten</h2></div><p>3 Flotten · Demo</p></header>
+        <div class="fleet-grid">
+          <article class="panel fleet-card">
+            <div class="card-head"><h3>Nova</h3><span class="chip warn">Pool am Limit</span></div>
+            <p>4 Varianten · 2 Einsätze · r12</p>
+            <dl><div><dt>Netto</dt><dd class="positive">+1.740 €</dd></div><div><dt>Tradezyklen</dt><dd>38</dd></div><div><dt>Max. PnL-DD</dt><dd>620 €</dd></div></dl>
+            <a class="action" href="#nova">Nova öffnen <span aria-hidden="true">→</span></a>
+          </article>
+          <article class="panel fleet-card">
+            <div class="card-head"><h3>Vega</h3><span class="chip good">Daten frisch</span></div>
+            <p>3 Varianten · 1 Einsatz · r08</p>
+            <dl><div><dt>Netto</dt><dd class="positive">+740 €</dd></div><div><dt>Tradezyklen</dt><dd>24</dd></div><div><dt>Max. PnL-DD</dt><dd>310 €</dd></div></dl>
+            <p class="footnote">Listenbeispiel</p>
+          </article>
+          <article class="panel fleet-card" id="orion" tabindex="-1">
+            <div class="card-head"><h3>Orion</h3><span class="chip danger">Quelle veraltet</span></div>
+            <p>2 Varianten · 1 Einsatz · zuletzt r06</p>
+            <dl><div><dt>Netto</dt><dd>—</dd></div><div><dt>Tradezyklen</dt><dd>—</dd></div><div><dt>Max. PnL-DD</dt><dd>—</dd></div></dl>
+            <p class="footnote">Stand 08:55 · aktueller Periodenwert unbelegt</p>
+          </article>
+        </div>
+      </section>
+    </section>
+
+    <section id="view-nova" class="view" aria-labelledby="title-nova" hidden>
+      <header class="hero fleet-hero">
+        <a class="back" href="#fleet">← Alle Flotten</a>
+        <p class="label">Flottendetail</p>
+        <h1 id="title-nova" tabindex="-1">Nova</h1>
+        <p>4 Strategielinien · 2 Einsätze · bestätigte Revision r12</p>
+        <ul class="scope" aria-label="Datenausschnitt">
+          <li>Demo</li><li>1.–5. Nov. 2026</li><li>Europe/Berlin</li><li>EUR</li><li>Stand 05.11. · 09:35</li>
+        </ul>
+      </header>
+      <ul class="health panel" aria-label="Betriebszustand">
+        <li>Kernfortschritt <strong>09:35</strong></li><li>Worker <strong>2 bereit</strong></li>
+        <li>Broker <strong>Verbunden</strong></li><li>Telemetrie <strong>Frisch</strong></li>
+        <li>Neueinstiege <strong>3 von 4 erlaubt</strong></li><li>Verwaltung <strong>Aktiv</strong></li>
+      </ul>
+      <section class="panel detail-panel">
+        <p class="label">Überblick</p><h2>Periodenergebnis</h2>
+        <dl class="detail-stats"><div><dt>Trading-Netto</dt><dd class="positive">+1.740 €</dd></div><div><dt>Profit Factor</dt><dd>1,61</dd></div><div><dt>Winrate</dt><dd>55,3 %</dd></div><div><dt>Tradezyklen</dt><dd>38</dd></div></dl>
+        <p class="footnote">+1.510 € gebucht · +230 € Veränderung offene Bewertung · 21 Gewinnzyklen, 16 Verlustzyklen, 1 Break-even</p>
+      </section>
+      <section class="panel detail-panel" aria-labelledby="variants-title">
+        <p class="label">Varianten</p><h2 id="variants-title">Strategien und Revisionen</h2>
+        <details class="record"><summary>Atlas Breakout <span>EURUSD · H1 · v12</span></summary><p>Pool Alpha · aktiv. Die frühere v11 läuft mit einer offenen Verpflichtung im selben Pool aus.</p></details>
+        <details class="record"><summary>Meridian Revert <span>GBPUSD · M30 · v07</span></summary><p>Pool Beta · aktiv. Die Revision bleibt den ursprünglichen Tradezyklen zugeordnet.</p></details>
+        <details class="record"><summary>Ion Trend <span>USDJPY · H4 · v04</span></summary><p>Pool Gamma · aktiv.</p></details>
+        <details class="record"><summary>Echo Session <span>EURGBP · M15 · v05</span></summary><p>Pool Delta · Neueinstieg durch gebundene Kapazität eingeschränkt. Positionsverwaltung aktiv.</p></details>
+      </section>
+      <section class="panel detail-panel" id="nova-risk" tabindex="-1" aria-labelledby="risk-title">
+        <p class="label">Risiko</p><h2 id="risk-title">Pool Delta am Limit</h2>
+        <p>1.200 € von 1.200 € gebunden. Darin enthalten sind 420 € mit ungeklärter Wirkung (UNKNOWN).</p>
+        <p>Beispielbefund <a href="#bugs">D-014 im Bug Board</a> · Ereignis SIM-0432 · beobachtet 09:30 · Nova r12</p>
+      </section>
+    </section>
+
+    <section id="view-missions" class="view" aria-labelledby="title-missions" hidden>
+      <header class="hero"><p class="label">02 / Projektmanagement</p><h1 id="title-missions" tabindex="-1">Mission Log</h1><p>Entwicklungsarbeit, Belege und nächste Schritte.</p></header>
+      <section class="panel detail-panel"><p class="label">Beispielmissionen</p><h2>Missionsübersicht</h2>
+        <details class="record"><summary>Demo M-017 · Poolbelege abgleichen <span class="chip warn">In Arbeit</span></summary><p>Nova r12 · Belegkette für die Reservierung in Pool Delta prüfen. <a href="#bugs">Verknüpften Bug öffnen</a></p></details>
+        <details class="record"><summary>Demo M-016 · Strategiepfade dokumentieren <span class="chip good">Abgeschlossen</span></summary><p>Revisionsbeispiele für Atlas Breakout und Meridian Revert dokumentiert.</p></details>
+      </section>
+    </section>
+
+    <section id="view-context" class="view" aria-labelledby="title-context" hidden>
+      <header class="hero"><p class="label">02 / Projektmanagement</p><h1 id="title-context" tabindex="-1">Context Core</h1><p>Entscheidungen und Quellen für die nächste Aufgabe.</p></header>
+      <article class="panel detail-panel"><div class="card-head"><h2>Beispiel · Poolidentität</h2><span class="chip">Entwurf</span></div><p>Auslaufende Revisionen behalten ihre Verpflichtungen im ursprünglichen Pool.</p><a href="#nova">Beispiel in Nova ansehen</a></article>
+    </section>
+
+    <section id="view-bugs" class="view" aria-labelledby="title-bugs" hidden>
+      <header class="hero"><p class="label">02 / Projektmanagement</p><h1 id="title-bugs" tabindex="-1">Bug Board</h1><p>Technische Befunde mit Auswirkung und Belegen.</p></header>
+      <article class="panel detail-panel"><div class="card-head"><h2>Demo D-014 · Belegreferenz fehlt</h2><span class="chip warn">Offen</span></div><p>Der Betrieb liefert eine Reservierung, deren Detailreferenz im Demo-Export fehlt.</p>
+        <dl class="detail-stats"><div><dt>Gesamtrisiko</dt><dd>Mittel</dd></div><div><dt>Laufwirkung</dt><dd>Eingeschränkt</dd></div><div><dt>Ereignis</dt><dd>SIM-0432</dd></div></dl>
+        <p><a href="#nova-risk">Fleet-Befund ansehen</a> · <a href="#missions">Mission Log öffnen</a></p>
+      </article>
+    </section>
+
+    <section id="view-legal" class="view" aria-labelledby="title-legal" hidden>
+      <header class="hero"><p class="label">02 / Projektmanagement</p><h1 id="title-legal" tabindex="-1">Legal &amp; Lizenzen</h1><p>Herkunft, Nutzungsrahmen und zugehörige Nachweise.</p></header>
+      <article class="panel detail-panel"><div class="card-head"><h2>Beispiel · Exportbibliothek</h2><span class="chip">Prüfung offen</span></div><p>Herkunft im Demo-Register erfasst. Lizenzbeleg und Weitergaberechte stehen zur Prüfung.</p></article>
+    </section>
+  </main>
+</body>
+</html>
