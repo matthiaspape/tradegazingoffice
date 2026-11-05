@@ -66,7 +66,9 @@ Produktionsansichten trennen Live, Demo und Research. Summen verwenden kompatibl
 2. **Lesendes Fleet Control.** Übersicht, Flottendetail, Varianten und Betrieb mit qualifiziertem Datenausschnitt umsetzen. Je Kennzahl Herkunft, Scope, Qualität und belegte Identitäten prüfen. Abnahmefälle sind unter anderem veraltete Quellen, fehlende Kosten, mehrere Einsätze und auslaufende Revisionen.
 3. **Journal und Querverweise.** Risiko- und Journaltiefe, Variantenanalysen und belegte Links zum Bug Board ergänzen. Projekt-Writes bleiben bewusste, serverseitig autorisierte Projektaktionen. Die Fleet-Oberfläche dient der Beobachtung.
 
-Die lokale Anwendung zeigt bis zur beauftragten Umsetzung den bisherigen Platzhalter. Die Vorschau ist eine eigenständige HTML-Datei mit lokalen Styles, Script und Original-Logos. Alle Kennzahlen, Zeitpunkte und Projekte darin sind fiktiv. Betriebsdaten, private Zugänge und Freigaben liegen außerhalb der Vorschau. Die fachlichen Voraussetzungen stehen in der [technischen Grundlage](references/FLEET_CONTROL_DESK_TECHNISCHE_GRUNDLAGE.md) und im [Dashboard-Plan](DashboardPlan.md).
+Der gemeinsame Rahmen und die erste Fleet-Ansicht sind im lokalen Desk umgesetzt. Fleet Control zeigt drei fiktive Flotten und die Abdeckung direkt an Kennzahlen. Der verlinkte statische Entwurf hält den ursprünglichen Designstand fest und verwendet Styles, Script und Original-Logos aus dem Checkout. [Umsetzungsnachweis](../TradegazingOfficeDesk/docs/FLEET_DEMO_VALIDATION.md)
+
+Die fachlichen Voraussetzungen für eine spätere Datenanbindung stehen in der [technischen Grundlage](references/FLEET_CONTROL_DESK_TECHNISCHE_GRUNDLAGE.md) und im [Dashboard-Plan](DashboardPlan.md).
 
 ## Prüfung der Vorschau
 

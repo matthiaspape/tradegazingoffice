@@ -6,12 +6,12 @@ Diese Datei gilt für das gesamte Repository. Sie enthält dauerhafte Projekt- u
 
 1. Lies zu Beginn `README.md` und `ArchitekturDraft.md`; prüfe anschließend den relevanten Code und vorhandene Integrationsnachweise.
    Für Dashboard-/MT5-Aufgaben lies zusätzlich `docs/DashboardPlan.md`.
-   Für Flottenjournal-/Fleet-Control-Desk-Aufgaben lies zusätzlich `docs/FleetControlDeskKonzept.md` und die konkreten Grenzen in `docs/FleetControlDeskReview.md`. Die grafische Designstudie verwendet fiktive Daten und ist keine Liveintegration oder freigegebene Berechnungsengine.
+   Für Flottenjournal-/Fleet-Control-Desk-Aufgaben lies zusätzlich `docs/FleetControlDeskKonzept.md`, die Grenzen in `docs/FleetControlDeskReview.md` und für die Oberfläche `docs/TradegazingOfficeDeskUX.md`. Die Designstudie und Fleet Control im lokalen Desk verwenden fiktive Daten. Für eine Liveintegration ist eine eigene fachliche Abnahme erforderlich.
    Repository: `matthiaspape/tradegazingoffice`, Standardbranch `main`. Die Entwurfsquelle liegt in `design/fleet-control-desk/fleet-control-desk.html`, die im Browser öffnungsfähige Vorschau in `design/fleet-control-desk/index.html`. Beide sind Designartefakte; eine Produktionslaufzeit ist damit nicht festgelegt.
-   Das implementierte lokale Projektmanagement liegt in `TradegazingOfficeDesk/` (Node.js 24+, React/vinext, SQLite). Einstieg und Regeln stehen in dessen README.md und AGENTS.md; das ist eine eigene Anwendung gegenüber der Fleet-Control-Desk-Designstudie.
+   Die lokale Anwendung für Projektmanagement und die Fleet-Control-Demo liegt in `TradegazingOfficeDesk/` (Node.js 24+, React/vinext, SQLite). Einstieg und Regeln stehen in dessen README.md und AGENTS.md.
 2. Prüfe Git-Status und bestehende Änderungen, bevor du Dateien bearbeitest. Erhalte Nutzeränderungen und Arbeiten anderer Sessions.
 3. Unterscheide Planungsentscheidung, Anbieterangabe, tatsächlich getestete Fähigkeit und produktive Einrichtung. Dokumente allein beweisen keine freigeschalteten Konten oder funktionierenden APIs.
-4. Der initiale Stand vom 03.10.2026 war dokumentarisch. Seit 04.11.2026 ist das lokale Projektmanagement als `TradegazingOfficeDesk/` implementiert; Trading-Journal, Provideranbindungen und Steuerregeln bleiben Entwurf beziehungsweise ungeklärt. Die Node-/SQLite-Laufzeit des Projektmanagements ist keine Laufzeitentscheidung für die künftige Buchhaltung.
+4. Der initiale Stand vom 03.10.2026 war dokumentarisch. Das lokale Projektmanagement ist seit 04.11.2026 implementiert, Fleet Control mit Beispieldaten seit 05.11.2026. Produktives Trading-Journal, Provideranbindungen und Steuerregeln bleiben Entwurf beziehungsweise ungeklärt. Die Laufzeit der künftigen Buchhaltung ist offen.
 
 ## Projektmanagement und Bug Board
 

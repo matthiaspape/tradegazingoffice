@@ -1,8 +1,8 @@
 # Oberfläche des Tradegazing Office Desk
 
-- Das Desk dient dem Projektmanagement. Fleet Control Desk ist eine separate Trading-Journal-Designstudie; deren Beispieldaten sind keine Projektmanagement- oder Live-Datenquelle.
+- Das Desk umfasst Projektmanagement und die lesende Fleet-Control-Demo. Fleet-Beispieldaten bleiben von Projektdaten und Live-Daten getrennt.
 - Originale Tradegazing-SVGs aus `public/brand/` verwenden; Logo für hell/dunkel, Teal/Navy und gemeinsame Navigation konsistent halten. Keine Marke neu zeichnen oder fremde Assets erfinden.
-- Controlling steht vor Projektmanagement. Fleet Control ist vorerst eine Dummy-Seite und sowohl als Startseite unter `/` als auch unter `/controlling/fleet-control` erreichbar. Projektmanagement enthält Mission Log (`/missions`), Context Core, Bug Board und Legal & Lizenzen.
+- Controlling steht vor Projektmanagement. Fleet Control zeigt fiktive Daten unter `/` und `/controlling/fleet-control`. Abdeckung gehört direkt an jede Kennzahl. Veraltete Quellen bleiben sichtbar, ihre Werte sind aus aktuellen Summen ausgeschlossen. Projektmanagement enthält Mission Log (`/missions`), Context Core, Bug Board und Legal & Lizenzen.
 - Für spätere gemeinsame UI/UX-Arbeit das Zielbild in `docs/TradegazingOfficeDeskUX.md` lesen. Die zugehörige Designvorschau zeigt ausschließlich fiktive Beispieldaten.
 - Browser vor Fach-API-Zugriffen mit `ensureDeskSession` verbinden. Keine Bearer-Schlüssel, SQLite- oder Servermodule im Clientgraph. Reine Werkzeugschemas dürfen geteilt werden.
 - Formulare semantisch und per Tastatur bedienbar halten. Lade-, Leer-, Fehler- und Konfliktzustände zeigen; Schreibfehler nicht als Erfolg ausgeben. Nach Speicherung relevante Daten zurücklesen.

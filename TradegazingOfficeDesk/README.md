@@ -1,12 +1,12 @@
 # Tradegazing Office Desk
 
-Lokales Projektmanagement für Tradegazing Office: **Mission Log, Context Core, Bug Board und Legal & Lizenzen**. Basis ist das Aunerio-Desk; Bug-Board-Funktionen und Originalmarke stammen aus Tradegazing. [Übernahmeumfang](docs/ADAPTATION.md).
+Lokales Desk für Controlling und Projektmanagement mit dem originalen Tradegazing-Logo. Das Projektmanagement basiert auf dem Aunerio-Desk und dem Tradegazing-Bug-Board. [Übernahmeumfang](docs/ADAPTATION.md)
 
 [Fleet Control](http://127.0.0.1:43120/) · [Mission Log](http://127.0.0.1:43120/missions) · [Wissenskern](http://127.0.0.1:43120/context) · [Bug Board](http://127.0.0.1:43120/bugs) · [Legal](http://127.0.0.1:43120/legal)
 
-**Controlling** steht vor **Projektmanagement**. Fleet Control ist die Startseite unter `/` und über den Untereintrag unter `/controlling/fleet-control` erreichbar. Die Seite dient vorerst als Platzhalter. **Projektmanagement** enthält Mission Log, Context Core, Bug Board und Legal & Lizenzen.
+**Controlling** steht vor **Projektmanagement**. Fleet Control ist unter `/` und `/controlling/fleet-control` erreichbar. Die Übersicht und drei Flottendetails verwenden fest definierte fiktive Werte. Trading-Netto, Drawdown und Stoprisiko zeigen direkt ihren Teilumfang. Orions veraltete Werte stehen separat mit dem letzten Beobachtungszeitpunkt. Projektmanagement enthält Mission Log, Context Core, Bug Board und Legal & Lizenzen.
 
-Das [gemeinsame UI/UX-Zielbild](../docs/TradegazingOfficeDeskUX.md) und die [statische Vorschau](../design/tradegazing-office-desk/index.html) beschreiben die geplante Gestaltung beider Bereiche.
+Das [gemeinsame UI/UX-Zielbild](../docs/TradegazingOfficeDeskUX.md) beschreibt die Gestaltung und den verbleibenden Ausbau. Der [Umsetzungsnachweis](docs/FLEET_DEMO_VALIDATION.md) hält Umfang, Prüfung und Review fest.
 
 ## Start
 
