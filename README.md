@@ -6,9 +6,9 @@ Repository: [matthiaspape/tradegazingoffice](https://github.com/matthiaspape/tra
 
 ## Tradegazing Office Desk
 
-[Lokales Projektmanagement](http://127.0.0.1:43120/) mit Mission Log, Context Core, [Bug Board](http://127.0.0.1:43120/bugs) und Legal & Lizenzen. Aus dem Aunerio-Desk übernommen, mit dem Tradegazing-Bug-Board und den originalen Tradegazing-Logos ergänzt. Eigene SQLite-Datenbank und Zugangsschlüssel; keine übernommenen Missions-/Researchbestände.
+Das lokale Desk verbindet Controlling und Projektmanagement. Aus dem Aunerio-Desk übernommen, mit dem Tradegazing-Bug-Board und den originalen Tradegazing-Logos ergänzt. Eigene SQLite-Datenbank und Zugangsschlüssel; keine übernommenen Missions-/Researchbestände.
 
-Diese vier Bereiche liegen als Untereinträge unter **Projektmanagement**. Unter **Controlling** liegt [Fleet Control](http://127.0.0.1:43120/controlling/fleet-control), zunächst als Dummy-Seite.
+**Controlling** steht vor **Projektmanagement**. [Fleet Control](http://127.0.0.1:43120/) ist die Startseite und dient zunächst als Platzhalter. Unter **Projektmanagement** liegen [Mission Log](http://127.0.0.1:43120/missions), Context Core, [Bug Board](http://127.0.0.1:43120/bugs) und Legal & Lizenzen.
 
 Start, MCP/CLI, Datenablage und Prüfbelege: [TradegazingOfficeDesk/README.md](TradegazingOfficeDesk/README.md). Auf diesem Mac: `cd TradegazingOfficeDesk` und `./desk launch`; die Abhängigkeiten, Einrichtung und der Build müssen vorhanden sein. Die lokale Projektmanagement-Laufzeit ist Node.js 24+ mit React/vinext und SQLite.
 

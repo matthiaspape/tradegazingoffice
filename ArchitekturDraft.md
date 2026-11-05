@@ -726,7 +726,7 @@ Jede Anbieterintegration sollte später einen kurzen Fähigkeitsnachweis mit Pr�
 
 Das Projektmanagement organisiert Entwicklungsarbeit und Befunde; es hat keine Bank-, Steuer-, Mail-, EA- oder Researchausführungsrechte. Die Laufzeitentscheidung gilt nur dafür. Die folgende Fleet-Control-Desk-Designstudie bleibt ein separater Entwurf ohne MT5-Datenanbindung. Historische Abschnitte zur noch nicht implementierten Buchhaltung bleiben in ihrem fachlichen Umfang unverändert.
 
-Die Office-Navigation gruppiert Mission Log, Context Core, Bug Board und Legal & Lizenzen unter „Projektmanagement“. „Controlling“ enthält Fleet Control unter `/controlling/fleet-control`; dieser Bereich ist auf Nutzerauftrag zunächst eine Dummy-Seite und übernimmt keine Daten aus der Designstudie oder MT5.
+In der Office-Navigation steht „Controlling“ vor „Projektmanagement“. Fleet Control ist die Startseite unter `/` und auch unter `/controlling/fleet-control` erreichbar. Die Seite dient vorerst als Platzhalter. Unter „Projektmanagement“ liegen Mission Log (`/missions`), Context Core, Bug Board und Legal & Lizenzen.
 
 Zusätzliche dauerhafte Nutzervorgabe vom 04.11.2026: Der bearbeitende Agent legt bei neuen inhaltlichen Aufgaben automatisch thematische Missionen an, committet abgeschlossene Zwischenstände zeitnah und erledigt nach fachlichem Abschluss Cleanup und Push. Fortsetzungen bleiben in ihrer Mission; fremde Arbeit, benötigte Belege und ausdrückliche Nutzerpausen bleiben erhalten. Dies ist ein Agentenworkflow gemäß AGENTS.md und Missionsworkflow, kein Hintergrunddienst oder operativer Prozessstart.
 

@@ -2,9 +2,9 @@
 
 Lokales Projektmanagement für Tradegazing Office: **Mission Log, Context Core, Bug Board und Legal & Lizenzen**. Basis ist das Aunerio-Desk; Bug-Board-Funktionen und Originalmarke stammen aus Tradegazing. [Übernahmeumfang](docs/ADAPTATION.md).
 
-[Desk](http://127.0.0.1:43120/) · [Wissenskern](http://127.0.0.1:43120/context) · [Bug Board](http://127.0.0.1:43120/bugs) · [Legal](http://127.0.0.1:43120/legal)
+[Fleet Control](http://127.0.0.1:43120/) · [Mission Log](http://127.0.0.1:43120/missions) · [Wissenskern](http://127.0.0.1:43120/context) · [Bug Board](http://127.0.0.1:43120/bugs) · [Legal](http://127.0.0.1:43120/legal)
 
-Die Navigation gliedert sich in **Projektmanagement** (Mission Log, Context Core, Bug Board, Legal & Lizenzen) und **Controlling** ([Fleet Control](http://127.0.0.1:43120/controlling/fleet-control)). Fleet Control ist vorerst eine reine Dummy-Seite. Die bestehende Trading-Journal-Designstudie wird dadurch nicht angebunden.
+**Controlling** steht vor **Projektmanagement**. Fleet Control ist die Startseite unter `/` und über den Untereintrag unter `/controlling/fleet-control` erreichbar. Die Seite dient vorerst als Platzhalter. **Projektmanagement** enthält Mission Log, Context Core, Bug Board und Legal & Lizenzen.
 
 ## Start
 
