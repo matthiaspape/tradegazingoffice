@@ -19,6 +19,12 @@ async def main():
         errors = []
         page.on('pageerror', lambda e: errors.append(str(e)))
         await page.goto(BASE)
+        await expect(page.get_by_role('heading', name='Fleet Control.')).to_be_visible()
+        navigation = page.get_by_role('navigation', name='Projektbereiche')
+        await expect(navigation.locator('summary')).to_have_text(['Controlling⌄', 'Projektmanagement⌄'])
+        await navigation.locator('summary').filter(has_text='Projektmanagement').click()
+        await page.get_by_role('link', name='Mission Log', exact=True).click()
+        await expect(page).to_have_url(BASE+'/missions')
         await expect(page.get_by_role('button', name='+ Neue Mission')).to_be_enabled()
         empty = await page.request.get(BASE+'/api/missions')
         assert empty.status == 200
@@ -80,7 +86,7 @@ async def main():
         output = ROOT/'docs/screenshots'
         output.mkdir(exist_ok=True)
         await page.screenshot(path=str(output/'bug-board.png'),full_page=True)
-        for path in ['/context','/legal','/']:
+        for path in ['/context','/legal','/missions']:
             await page.goto(BASE+path)
             await expect(page.locator('h1')).to_be_visible()
             await expect(page.get_by_role('link', name='Tradegazing Office Desk Startseite')).to_be_visible()
@@ -91,7 +97,7 @@ async def main():
         await page.screenshot(path=str(output/'mission-log-dark.png'),full_page=True)
         for width in [390,320]:
             await page.set_viewport_size({'width':width,'height':900})
-            for path in ['/','/bugs','/context','/legal']:
+            for path in ['/','/missions','/bugs','/context','/legal']:
                 await page.goto(BASE+path)
                 await expect(page.locator('h1')).to_be_visible()
                 assert await page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'), (width,path)
@@ -100,7 +106,7 @@ async def main():
                 await expect(page.get_by_role('heading', name='Bug Board',exact=True)).to_be_visible()
                 await page.screenshot(path=str(output/'bug-board-mobile.png'),full_page=True)
         assert not errors, errors
-        report={'mission_create_edit_reload':True,'bug_create_edit_occurrence':True,'rest_mcp_same_data':True,'auth_origin':True,'pages':['/','/bugs','/context','/legal'],'widths':[1280,390,320],'dark_logo':True,'page_errors':errors,'data_scope':'isolated QA instance only'}
+        report={'mission_create_edit_reload':True,'bug_create_edit_occurrence':True,'rest_mcp_same_data':True,'auth_origin':True,'pages':['/','/missions','/bugs','/context','/legal'],'widths':[1280,390,320],'dark_logo':True,'page_errors':errors,'data_scope':'isolated QA instance only'}
         (ROOT/'docs/browser-smoke.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
         print(json.dumps(report,ensure_ascii=False))
         await browser.close()

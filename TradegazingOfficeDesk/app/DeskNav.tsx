@@ -3,14 +3,14 @@ import { useEffect, useRef } from 'react';
 
 type Section = 'missions' | 'context' | 'legal' | 'bugs' | 'fleet';
 const groups = [
+  { label: 'Controlling', items: [
+    { id: 'fleet', label: 'Fleet Control', href: '/controlling/fleet-control' },
+  ] },
   { label: 'Projektmanagement', items: [
-    { id: 'missions', label: 'Mission Log', href: '/' },
+    { id: 'missions', label: 'Mission Log', href: '/missions' },
     { id: 'context', label: 'Context Core', href: '/context' },
     { id: 'bugs', label: 'Bug Board', href: '/bugs' },
     { id: 'legal', label: 'Legal & Lizenzen', href: '/legal' },
-  ] },
-  { label: 'Controlling', items: [
-    { id: 'fleet', label: 'Fleet Control', href: '/controlling/fleet-control' },
   ] },
 ];
 
