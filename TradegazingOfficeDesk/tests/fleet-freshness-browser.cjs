@@ -1,58 +1,169 @@
-// Only the changed client timing flow; all API data below are explicitly synthetic test fixtures.
-const {chromium}=require('/Users/matthiaspape/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+// Real FleetControl mounted/unmounted by React; every API response is synthetic.
+const {chromium,browserOptions}=require('./browser-runtime.cjs');
 const {mkdirSync,writeFileSync}=require('node:fs');
-const {resolve}=require('node:path');
+const {resolve,dirname}=require('node:path');
 const assert=require('node:assert/strict');
-const base='http://127.0.0.1:43121',time=Date.parse('2026-11-14T12:00:00Z');
+const time=Date.parse('2026-11-14T12:00:00Z');
 const endpoint='**/api/fleet-control/overview';
+const emptyResources={retry:0,poll:0,tick:0,visibility:0};
 function sample(count,{refreshing,current}){
  const observedAt=new Date(time-(current?15:1200)*1000).toISOString();
  return {mode:'NATIVE',asOf:new Date(time).toISOString(),refreshing,hosts:[{id:'test',name:`Healthprobe ${count}`,ip:'192.0.2.10',observedAt,state:current?'CURRENT':'STALE',connection:'CURRENT',lastPull:new Date(time).toISOString(),issue:null,cpu:42,cpuMax:50,ram:{percent:50,used:500,total:1000},volumes:[],samples:20,cpuSamples:20,expected:20,attention:[],waitingForEa:true,unboundAccounts:0,series:[],processes:[],fleets:[]}]};
 }
-(async()=>{
- const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
- const errors=[],checks=[];
- async function page(){const p=await browser.newPage();p.on('pageerror',e=>errors.push(String(e)));await p.clock.install({time:new Date(time)});return p;}
+async function createPage(browser,url,errors){
+ const page=await browser.newPage();
+ page.on('pageerror',e=>errors.push(String(e)));
+ await page.clock.install({time:new Date(time)});
+ await page.route('**/api/local/session',route=>route.fulfill({json:{ok:true}}));
+ await page.goto(url);
+ await page.getByRole('button',{name:'Mount Fleet Control',exact:true}).waitFor();
+ return page;
+}
+const mount=page=>page.getByRole('button',{name:'Mount Fleet Control',exact:true}).click();
+async function unmount(page){
+ await page.getByRole('button',{name:'Unmount Fleet Control',exact:true}).click();
+ await page.getByRole('button',{name:'Mount Fleet Control',exact:true}).waitFor();
+ assert.equal(await page.getByRole('heading',{name:'Fleet Control',exact:true}).count(),0);
+}
+async function trackResources(page){
+ await page.evaluate(()=>{
+  const retry=new Set(),poll=new Set(),tick=new Set(),visibility=new Set();
+  const timeout=window.setTimeout.bind(window),clearTimeout=window.clearTimeout.bind(window);
+  const interval=window.setInterval.bind(window),clearInterval=window.clearInterval.bind(window);
+  const add=document.addEventListener.bind(document),remove=document.removeEventListener.bind(document);
+  const fetch=window.fetch.bind(window);
+  window.fleetOverviewCompleted=0;
+  window.fetch=async(...args)=>{
+   const response=await fetch(...args);
+   if(String(args[0])==='/api/fleet-control/overview'){
+    const json=response.json.bind(response);
+    response.json=async()=>{const value=await json();window.fleetOverviewCompleted++;return value;};
+   }
+   return response;
+  };
+  window.setTimeout=(handler,delay,...args)=>{
+   if(delay!==2000||typeof handler!=='function')return timeout(handler,delay,...args);
+   const id=timeout((...values)=>{retry.delete(id);handler(...values);},delay,...args);
+   retry.add(id);return id;
+  };
+  window.clearTimeout=id=>{retry.delete(id);clearTimeout(id);};
+  window.setInterval=(handler,delay,...args)=>{
+   const id=interval(handler,delay,...args);
+   if(delay===300000)poll.add(id);
+   if(delay===30000)tick.add(id);
+   return id;
+  };
+  window.clearInterval=id=>{poll.delete(id);tick.delete(id);clearInterval(id);};
+  document.addEventListener=(type,listener,options)=>{
+   if(type==='visibilitychange')visibility.add(listener);
+   add(type,listener,options);
+  };
+  document.removeEventListener=(type,listener,options)=>{
+   if(type==='visibilitychange')visibility.delete(listener);
+   remove(type,listener,options);
+  };
+  window.fleetCleanupResources=()=>({retry:retry.size,poll:poll.size,tick:tick.size,visibility:visibility.size});
+  window.fleetCleanupDocument=document;
+ });
+}
+const resources=page=>page.evaluate(()=>window.fleetCleanupResources());
+async function cleanupCase(browser,url,errors){
+ const page=await createPage(browser,url,errors);let calls=0;
  try{
-  const p=await page();let calls=0;
-  await p.route(endpoint,route=>{calls++;return route.fulfill({json:sample(calls,{refreshing:calls===1,current:calls>1})});});
-  await p.goto(base);await p.getByRole('link',{name:'Healthprobe 1 →',exact:true}).waitFor();
+  await trackResources(page);
+  await page.route(endpoint,route=>route.fulfill({json:sample(++calls,{refreshing:true,current:false})}));
+  await mount(page);await page.getByRole('link',{name:'Healthprobe 1 →',exact:true}).waitFor();
+  assert.deepEqual(await resources(page),{retry:1,poll:1,tick:1,visibility:1},'Probe must see all four resources before unmount');
+  await unmount(page);
+  assert.equal(await page.evaluate(()=>window.fleetCleanupDocument===document),true,'React unmount must retain the original document');
+  assert.deepEqual(await resources(page),emptyResources,'React cleanup leaked tracked resources');
+  await page.clock.runFor(601000);
+  await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+  assert.equal(calls,1,'Unmount prevents catch-up, normal polls and visibility-triggered requests');
+  // A new mount must own exactly one set of resources, with no leftovers.
+  await mount(page);await page.getByRole('link',{name:'Healthprobe 2 →',exact:true}).waitFor();
+  assert.deepEqual(await resources(page),{retry:1,poll:1,tick:1,visibility:1});
+  await unmount(page);assert.deepEqual(await resources(page),emptyResources);
+ }finally{await page.close();}
+}
+async function lateResponseCase(browser,url,errors){
+ const page=await createPage(browser,url,errors);let calls=0,release,started;
+ const gate=new Promise(resolve=>{release=resolve;}),requestStarted=new Promise(resolve=>{started=resolve;});
+ try{
+  await trackResources(page);
+  await page.route(endpoint,async route=>{
+   calls++;started();await gate;await route.fulfill({json:sample(calls,{refreshing:true,current:false})});
+  });
+  await mount(page);await requestStarted;await unmount(page);
+  assert.deepEqual(await resources(page),emptyResources);
+  const response=page.waitForResponse('**/api/fleet-control/overview');
+  release();await response;
+  await page.waitForFunction(()=>window.fleetOverviewCompleted===1);
+  await page.clock.runFor(10000);
+  assert.deepEqual(await resources(page),emptyResources,'Late response must not allocate a new retry after unmount');
+  assert.equal(calls,1);
+ }finally{release();await page.close();}
+}
+(async()=>{
+ const {startFleetHarness,mutations}=await import('./fleet-browser-harness.mjs');
+ const browser=await chromium.launch(browserOptions());
+ const errors=[],checks=[],negativeControls=[];
+ let harness;
+ try{
+  harness=await startFleetHarness();
+  const p=await createPage(browser,harness.url,errors);let calls=0;
+  await p.route(endpoint,route=>route.fulfill({json:sample(++calls,{refreshing:calls===1,current:calls>1})}));
+  await mount(p);await p.getByRole('link',{name:'Healthprobe 1 →',exact:true}).waitFor();
   await p.getByText('Health fehlt / veraltet',{exact:true}).waitFor();
   await p.clock.runFor(2000);await p.getByRole('link',{name:'Healthprobe 2 →',exact:true}).waitFor();
   await p.getByText('Health aktuell',{exact:true}).waitFor();assert.equal(calls,2);
-  await p.clock.runFor(60000);assert.equal(calls,2,'Completed refresh stops catch-up before normal 5-minute poll');
+  await p.clock.runFor(60000);assert.equal(calls,2);
   checks.push('Pending refresh becomes current after 2 seconds, without a five-minute delay');await p.close();
 
-  const bounded=await page();let retries=0;
-  await bounded.route(endpoint,route=>{retries++;return route.fulfill({json:sample(retries,{refreshing:true,current:false})});});
-  await bounded.goto(base);await bounded.getByRole('link',{name:'Healthprobe 1 →',exact:true}).waitFor();
+  const bounded=await createPage(browser,harness.url,errors);let retries=0;
+  await bounded.route(endpoint,route=>route.fulfill({json:sample(++retries,{refreshing:true,current:false})}));
+  await mount(bounded);await bounded.getByRole('link',{name:'Healthprobe 1 →',exact:true}).waitFor();
   for(let i=2;i<=7;i++){await bounded.clock.runFor(2000);await bounded.getByRole('link',{name:`Healthprobe ${i} →`,exact:true}).waitFor();}
-  await bounded.clock.runFor(60000);assert.equal(retries,7,'Initial request plus at most six follow-ups');
+  await bounded.clock.runFor(60000);assert.equal(retries,7);
   checks.push('Still-pending refresh stops after six follow-ups');await bounded.close();
 
-  const unmounted=await page();let extra=0;
-  await unmounted.route(endpoint,route=>{extra++;return route.fulfill({json:sample(extra,{refreshing:true,current:false})});});
-  await unmounted.goto(base);await unmounted.getByRole('link',{name:'Healthprobe 1 →',exact:true}).waitFor();
-  await unmounted.goto(base+'/missions');await unmounted.getByRole('button',{name:'+ Neue Mission',exact:true}).waitFor();
-  await unmounted.clock.runFor(10000);assert.equal(extra,1,'Leaving Fleet Control cancels the scheduled follow-up');
-  checks.push('Full document navigation stops catch-up; React cleanup is not isolated');await unmounted.close();
+  await cleanupCase(browser,harness.url,errors);
+  checks.push('Real React unmount in the same document removes retry, poll, clock and visibility listener; no requests over two poll intervals; remount owns exactly one set');
+  await lateResponseCase(browser,harness.url,errors);
+  checks.push('An in-flight overview response completing after unmount cannot schedule another retry');
 
-  const resumed=await page();let wakeups=0;
+  const resumed=await createPage(browser,harness.url,errors);let wakeups=0;
   await resumed.route(endpoint,async route=>{
    const now=await resumed.evaluate(()=>Date.now());
    const data=sample(++wakeups,{refreshing:false,current:true});
    data.asOf=new Date(now).toISOString();data.hosts[0].observedAt=new Date(now-15000).toISOString();
    return route.fulfill({json:data});
   });
-  await resumed.goto(base);await resumed.getByRole('link',{name:'Healthprobe 1 →',exact:true}).waitFor();
+  await mount(resumed);await resumed.getByRole('link',{name:'Healthprobe 1 →',exact:true}).waitFor();
   await resumed.clock.setSystemTime(new Date(time+20*60000));
   await resumed.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
   await resumed.getByRole('link',{name:'Healthprobe 2 →',exact:true}).waitFor();
   await resumed.getByText('Health aktuell',{exact:true}).waitFor();assert.equal(wakeups,2);
   checks.push('Returning to the visible Desk immediately refreshes after a long pause');await resumed.close();
+  await harness.close();harness=null;
+
+  for(const mutation of Object.keys(mutations)){
+   const mutant=await startFleetHarness(mutation);
+   try{
+    await assert.rejects(()=>cleanupCase(browser,mutant.url,errors),error=>{
+     assert.equal(error.code,'ERR_ASSERTION');
+     assert.match(error.message,/^React cleanup leaked tracked resources/);
+     assert.deepEqual(error.actual,{...emptyResources,[mutation]:1});
+     return true;
+    });
+    assert.equal(mutant.wasMutated(),true,'Negative control must modify the real component');
+    negativeControls.push({removed_cleanup:mutation,detected:true});
+   }finally{await mutant.close();}
+  }
   assert.deepEqual(errors,[]);
-  const output=resolve(__dirname,'../docs/mission-9');mkdirSync(output,{recursive:true});
-  writeFileSync(resolve(output,'browser-checks.json'),JSON.stringify({checked_at:new Date().toISOString(),synthetic_api:true,isolated_origin:base,checks,page_errors:errors},null,2)+'\n');
-  console.log(JSON.stringify({checks:checks.length,page_errors:errors.length,synthetic_api:true}));
- }finally{await browser.close();}
+  const output=resolve(process.env.FLEET_BROWSER_REPORT||resolve(__dirname,'../work/fleet-freshness-browser.json'));
+  mkdirSync(dirname(output),{recursive:true});
+  writeFileSync(output,JSON.stringify({checked_at:new Date().toISOString(),synthetic_api:true,real_react_component:true,checks,negative_controls:negativeControls,page_errors:errors},null,2)+'\n');
+  console.log(JSON.stringify({checks:checks.length,negative_controls:negativeControls.length,page_errors:errors.length,synthetic_api:true}));
+ }finally{if(harness)await harness.close();await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
