@@ -1,0 +1,79 @@
+{
+  "review_id": "a7009fe6c96b455c910a62575378946d",
+  "submission_sha256": "af545e0b26928cbb95f1912578f8a8a906a8f531ff994a9fbae9005819830a1c",
+  "provider": {
+    "kind": "claude",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "review": {
+    "criteria_results": [
+      {
+        "criterion_id": "C1",
+        "evidence": "Teilweise erfüllt. main.tsx importiert die unveränderte FleetControl und schaltet sie per useState im selben Dokument; geprüft wird das über fleetCleanupDocument===document. Vor dem Unmount stehen die Ressourcen auf {retry:1,poll:1,tick:1,visibility:1}, danach auf emptyResources. Es folgen runFor(601000), ein visibilitychange-Ereignis, calls===1 und ein Remount mit genau einem Ressourcensatz. Die verspätete Antwort wird über gate, waitForResponse und fleetOverviewCompleted===1 tatsächlich verarbeitet. Die Assertion ‚kein Retry‘ steht jedoch erst nach runFor(10000), wenn ein fälschlich geplanter 2-s-Retry bereits gefeuert hat und aus dem Tracker entfernt ist (M10-001). Die Prüfung der Abrufzahl erfolgt ohne Abwarten (M10-003).",
+        "passed": false
+      },
+      {
+        "criterion_id": "C2",
+        "evidence": "Erfüllt. fleet-browser-harness.mjs enthält einen enforce:'pre'-Transform nur für FleetControl.tsx. Er verlangt split(cleanup).length===2 und entfernt je eine der Operationen clearTimeout(retry), clearInterval(poll), clearInterval(tick) und removeEventListener ausschließlich im Speicher; Dateien werden nicht geschrieben. Ausgeführt wird jeweils dieselbe cleanupCase. Der assert.rejects-Validator verlangt ERR_ASSERTION, die Meldung /^React cleanup leaked tracked resources/ und error.actual exakt {...emptyResources,[mutation]:1}; andere Fehler werden durchgereicht. Zusätzlich wird wasMutated()===true geprüft.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C3",
+        "evidence": "Erfüllt. browser-runtime.cjs lädt Playwright mit require('playwright'). Die devDependency 1.62.1 steht in package.json und package-lock.json mit resolved und integrity. Standardmäßig wird keine executablePath- oder channel-Option gesetzt, also startet Playwright sein Chromium. FLEET_BROWSER_CHANNEL und FLEET_BROWSER_EXECUTABLE sind optional; sind beide gesetzt, wird ein Error geworfen. Feste Benutzer-, Cache- oder Mac-Pfade gibt es im Test nicht mehr. Vite läuft mit host 127.0.0.1 und port 0, die URL wird aus httpServer.address().port gebildet. /api/local/session und die Overview-Antworten sind per page.route synthetisch, Office-Datenbank und Auth werden nicht benötigt.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C4",
+        "evidence": "Erfüllt mit Einschränkung. FLEET_CLEANUP_TEST.md, AGENTS.md, README und ArchitekturDraft trennen synthetische API und Uhr klar von der echten React-Komponente. Genannt werden der tatsächliche Lauf mit FLEET_BROWSER_CHANNEL=chrome und Playwright 1.62.1 sowie der Typecheck. Ausdrücklich nicht behauptet werden ein Default-Chromium-, Linux- oder Windows-Lauf. Die M9-Entscheidung CHANGES_REQUESTED 4/5 bleibt als historisch gekennzeichnet, und es gibt ausdrücklich keine Gesamtfreigabe. Seiten schließen in finally, Mutanten-Server per finally mutant.close(), Harness und Browser im äußeren finally. Die Beschreibung der Late-Response-Prüfung (‚kein neuer Nachholtimer‘) ist erst nach der Korrektur von M10-001 belastbar.",
+        "passed": true
+      }
+    ],
+    "decision": "CHANGES_REQUESTED",
+    "findings": [
+      {
+        "file": "TradegazingOfficeDesk/tests/fleet-freshness-browser.cjs",
+        "id": "M10-001",
+        "impact": "Das Teilkriterium aus C1 ist im Test nicht wirksam abgesichert: Eine nach dem Unmount verarbeitete Overview-Antwort darf keinen Retry erzeugen. Ein Regressionsfall in diesem Pfad bliebe unentdeckt. Ein Laufzeitfehler folgt daraus nicht, weil der refresh-Guard den Folgeabruf verhindert. Es handelt sich um eine Lücke im Nachweis.",
+        "location": "lateResponseCase: await page.waitForFunction(()=>window.fleetOverviewCompleted===1); await page.clock.runFor(10000); assert.deepEqual(await resources(page),emptyResources,…)",
+        "problem": "Die einzige Assertion zum Retry steht nach clock.runFor(10000). Der Tracker löscht einen 2000-ms-Timer beim Auslösen selbst (retry.delete(id) im Wrapper). Plant die verspätete Antwort fälschlich einen Retry, etwa weil der Guard if(alive) um setTimeout(…,CATCHUP_DELAY_MS) fehlt, feuert dieser nach 2 s virtueller Zeit und verschwindet aus dem Set. refresh endet dann wegen !alive ohne Abruf, und es bleiben resources leer und calls===1. Die Prüfung besteht also auch mit genau dem Fehler, den sie ausschließen soll. FLEET_CLEANUP_TEST.md beschreibt sie dennoch so, dass sie prüft, ‚dass kein neuer Nachholtimer entsteht‘.",
+        "recommendation": "Im Tracker einen kumulativen Zähler für Retry-Anlagen führen, etwa retryCreated++ bei jedem 2000-ms-setTimeout. Nach dem Unmount einen Basiswert festhalten. Direkt nach waitForFunction prüfen, dass retry===0 ist und der Zähler unverändert blieb; dasselbe nach runFor(10000) noch einmal. Ergänzend eine fünfte In-Memory-Mutation, die den alive-Guard vor der Retry-Planung entfernt. Sie muss genau an dieser Assertion scheitern. Die Dokumentation erst danach als Nachweis formulieren.",
+        "severity": "P2",
+        "verification": "Mit einer in-memory mutierten Variante ohne if(alive) vor der Retry-Planung muss lateResponseCase mit der Late-Response-Assertion scheitern. Mit der echten Komponente muss der Fall bestehen."
+      },
+      {
+        "file": "TradegazingOfficeDesk/tests/fleet-freshness-browser.cjs",
+        "id": "M10-002",
+        "impact": "Auf langsamen oder ausgelasteten Maschinen können falsche Fehlschläge auftreten, auch in den Negativkontrollen, die dann mit einer fremden Assertion scheitern. Der Test erzeugt dadurch keine falsch-positiven Ergebnisse, die Portabilität des Nachweises sinkt aber.",
+        "location": "createPage: await page.clock.install({time:new Date(time)}); keine pauseAt-Anweisung; cleanupCase zwischen 'Healthprobe 1'-Sichtbarkeit und Ressourcenassertion nach dem Unmount",
+        "problem": "Nach page.clock.install läuft die Playwright-Uhr in Echtzeit weiter, solange sie nicht per pauseAt angehalten wird. cleanupCase rechnet damit, dass der 2-s-Nachholtimer erst nach dem Unmount fällig wird. Vergehen zwischen Render, Ressourcenprüfung, Unmount-Klick und Assertion mehr als 2 s Echtzeit, feuert der Retry. Dann entsteht ein zweiter Abruf (calls===2) oder ein Remount-Zustand ohne erwarteten Retry.",
+        "recommendation": "Nach install und goto die Uhr mit await page.clock.pauseAt(new Date(time)) anhalten, alternativ install direkt mit anschließendem pauseAt. Danach Zeit nur noch über runFor/fastForward voranschreiten lassen.",
+        "severity": "P3",
+        "verification": "cleanupCase und die Negativkontrollen mit künstlicher Verzögerung von mehr als 2 s vor dem Unmount ausführen, z. B. über einen zusätzlichen Echtzeit-Wait. Sie müssen weiterhin deterministisch bestehen bzw. exakt erkannt werden."
+      },
+      {
+        "file": "TradegazingOfficeDesk/tests/fleet-freshness-browser.cjs",
+        "id": "M10-003",
+        "impact": "Ein tatsächlich ausgelöster Folgeabruf könnte unentdeckt bleiben. Die Aussage in C1 und in der Dokumentation zur Zahl der Abrufe ist nur eingeschränkt belastbar.",
+        "location": "cleanupCase: await page.clock.runFor(601000); await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange'))); assert.equal(calls,1,…)",
+        "problem": "calls wird im Node-Routehandler erhöht. Die Assertion folgt unmittelbar auf das Auslösen des Sichtbarkeitsereignisses und auf die virtuell ausgelösten Polls. Ein dadurch gestarteter asynchroner Overview-Abruf erreicht den Routehandler aber erst nach dem Promise-Chain im Browser und einem IPC-Weg. Ob er vor der Assertion gezählt ist, ist nicht garantiert. Der Nachweis ‚kein Folgeabruf über zwei Pollintervalle und nach Sichtbarkeitsereignis‘ ist dadurch schwächer als dokumentiert. Abgedeckt wird er derzeit im Wesentlichen durch die Ressourcenprüfung und den alive-Guard.",
+        "recommendation": "Abrufe browserseitig synchron im fetch-Wrapper zählen, etwa window.fleetOverviewRequests++ vor dem Aufruf von fetch. Dann nach dem Sichtbarkeitsereignis kurz abwarten, z. B. Microtasks/Netzwerk ruhen lassen oder clock.runFor(1) plus einen kurzen Echtzeit-Wait. Danach diesen Zähler und calls prüfen.",
+        "severity": "P3",
+        "verification": "Mit einer Mutation, die den Listener behält und den alive-Check in refresh entfernt, muss die Assertion zur Abrufzahl zuverlässig scheitern."
+      }
+    ],
+    "resolved_findings": [],
+    "review_id": "a7009fe6c96b455c910a62575378946d",
+    "submission_sha256": "af545e0b26928cbb95f1912578f8a8a906a8f531ff994a9fbae9005819830a1c",
+    "summary": "Der Kern des Auftrags ist erfüllt. tests/fixtures/fleet-cleanup/main.tsx mountet die unveränderte FleetControl-Komponente über React-State im selben Dokument und unmountet sie dort wieder. trackResources erfasst Nachholtimer (2000 ms), Polltimer (300000 ms), Uhrtimer (30000 ms) und den visibilitychange-Listener. cleanupCase prüft den Zustand vor dem Unmount ({1,1,1,1}) und direkt danach (leer), außerdem Dokumentidentität und Remount. Alle vier Negativkontrollen sind wirksam. Der pre-Transform verlangt genau einen Cleanup-Anker, entfernt nur im Speicher je eine Operation und prüft per wasMutated, dass die echte Komponente verändert wurde. assert.rejects akzeptiert nur ERR_ASSERTION mit der exakten Meldung und error.actual mit genau dem verbliebenen Ressourcentyp. Ein Timer verbleibt, weil die Prüfung direkt nach dem Unmount erfolgt; Intervalle und Listener werden ohnehin nie automatisch entfernt. Playwright wird über die normale Paketauflösung geladen und ist in der Lockdatei mit Integrity gebunden. Kanal und Executable schließen sich gegenseitig aus. Der Vite-Server läuft auf Port 0 an 127.0.0.1, die Sitzung und alle Overview-Antworten sind synthetisch. Offen ist ein konkreter Nachweisfehler. Die Prüfung der verspäteten Antwort wartet zwar korrekt auf die tatsächliche JSON-Verarbeitung. Sie fragt die Ressourcen aber erst nach clock.runFor(10000) ab. Ein fälschlich geplanter 2-s-Retry wäre dann schon ausgelöst und vom Tracker wieder aus dem Set gelöscht, deshalb erkennt die Prüfung diesen Regressionsfall nicht (M10-001). Hinzu kommen zwei niedrige Robustheitspunkte. Die nach clock.install natürlich weiterlaufende Testuhr kann bei langsamer Ausführung Fehlalarme auslösen (M10-002). Die Assertions zu ausbleibenden Abrufen prüfen den Zähler ohne Abwarten, also unmittelbar (M10-003). Zum Befund M9-002 aus der historischen M9-Runde: Er ist durch diese Arbeit im Kern adressiert (echter Unmount, wirksame Negativkontrollen, portable Browserauflösung). Er steht hier nicht in resolved_findings, weil dieser Review keinen vorherigen Review fortsetzt und das Schema keine Einträge zulässt. Ich habe nichts ausgeführt; alle Testergebnisse stammen vom Entwickler.",
+    "unverified": [
+      "Keinen Browserlauf, keinen Typecheck und kein npm ci selbst ausgeführt. Das gemeldete Ergebnis (5 Checks, 4 Negativkontrollen, 0 Seitenfehler, Kanal chrome) und der Typecheck stammen vom Entwickler.",
+      "Nicht geprüft, ob es Playwright 1.62.1 in der Registry gibt und ob die Integrity-Hashes in der Lockdatei stimmen.",
+      "Nicht im Paket: unified.css, demo-data.ts und eine eventuelle postcss-Konfiguration. Dass Vite mit configFile:false diese Abhängigkeiten auflöst, ist nur aus dem gemeldeten erfolgreichen Lauf abgeleitet.",
+      "Nicht nachgewiesen, dass work/ per .gitignore ausgeschlossen ist. docs/mission-10/browser-checks.json stammt laut Entwickler aus dem Lauf vor der Umstellung des Berichtspfads.",
+      "Das Echtzeitverhalten der Playwright-Uhr nach clock.install (Grundlage von M10-002) beruht auf der dokumentierten Playwright-Semantik und wurde nicht im Lauf beobachtet.",
+      "Kein Lauf mit dem Standard-Chromium und keiner auf Linux oder Windows; beides wird in der Dokumentation auch nicht behauptet."
+    ]
+  },
+  "test_evidence_kind": "developer-reported, not executed by this bridge"
+}

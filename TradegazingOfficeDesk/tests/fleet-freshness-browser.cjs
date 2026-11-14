@@ -13,10 +13,11 @@ function sample(count,{refreshing,current}){
 async function createPage(browser,url,errors){
  const page=await browser.newPage();
  page.on('pageerror',e=>errors.push(String(e)));
- await page.clock.install({time:new Date(time)});
+ await page.clock.install({time:new Date(time-2*3600000)});
  await page.route('**/api/local/session',route=>route.fulfill({json:{ok:true}}));
  await page.goto(url);
  await page.getByRole('button',{name:'Mount Fleet Control',exact:true}).waitFor();
+ await page.clock.pauseAt(new Date(time));
  return page;
 }
 const mount=page=>page.getByRole('button',{name:'Mount Fleet Control',exact:true}).click();
@@ -32,17 +33,21 @@ async function trackResources(page){
   const interval=window.setInterval.bind(window),clearInterval=window.clearInterval.bind(window);
   const add=document.addEventListener.bind(document),remove=document.removeEventListener.bind(document);
   const fetch=window.fetch.bind(window);
+  let retryCreated=0,overviewRequests=0,responseProcessed;
+  window.fleetOverviewProcessed=new Promise(resolve=>{responseProcessed=resolve;});
   window.fleetOverviewCompleted=0;
   window.fetch=async(...args)=>{
+   if(String(args[0])==='/api/fleet-control/overview')overviewRequests++;
    const response=await fetch(...args);
    if(String(args[0])==='/api/fleet-control/overview'){
     const json=response.json.bind(response);
-    response.json=async()=>{const value=await json();window.fleetOverviewCompleted++;return value;};
+    response.json=async()=>{const value=await json();window.fleetOverviewCompleted++;responseProcessed();return value;};
    }
    return response;
   };
   window.setTimeout=(handler,delay,...args)=>{
    if(delay!==2000||typeof handler!=='function')return timeout(handler,delay,...args);
+   retryCreated++;
    const id=timeout((...values)=>{retry.delete(id);handler(...values);},delay,...args);
    retry.add(id);return id;
   };
@@ -63,10 +68,13 @@ async function trackResources(page){
    remove(type,listener,options);
   };
   window.fleetCleanupResources=()=>({retry:retry.size,poll:poll.size,tick:tick.size,visibility:visibility.size});
+  window.fleetCleanupCounters=()=>({retryCreated,overviewRequests});
   window.fleetCleanupDocument=document;
  });
 }
 const resources=page=>page.evaluate(()=>window.fleetCleanupResources());
+const counters=page=>page.evaluate(()=>window.fleetCleanupCounters());
+const wallDelay=()=>new Promise(resolve=>setTimeout(resolve,2100));
 async function cleanupCase(browser,url,errors){
  const page=await createPage(browser,url,errors);let calls=0;
  try{
@@ -74,11 +82,13 @@ async function cleanupCase(browser,url,errors){
   await page.route(endpoint,route=>route.fulfill({json:sample(++calls,{refreshing:true,current:false})}));
   await mount(page);await page.getByRole('link',{name:'Healthprobe 1 →',exact:true}).waitFor();
   assert.deepEqual(await resources(page),{retry:1,poll:1,tick:1,visibility:1},'Probe must see all four resources before unmount');
+  await wallDelay(); // A slow host must not let the paused 2-second retry fire.
   await unmount(page);
   assert.equal(await page.evaluate(()=>window.fleetCleanupDocument===document),true,'React unmount must retain the original document');
   assert.deepEqual(await resources(page),emptyResources,'React cleanup leaked tracked resources');
   await page.clock.runFor(601000);
   await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+  assert.equal((await counters(page)).overviewRequests,1,'Unmount caused an overview fetch');
   assert.equal(calls,1,'Unmount prevents catch-up, normal polls and visibility-triggered requests');
   // A new mount must own exactly one set of resources, with no leftovers.
   await mount(page);await page.getByRole('link',{name:'Healthprobe 2 →',exact:true}).waitFor();
@@ -96,13 +106,29 @@ async function lateResponseCase(browser,url,errors){
   });
   await mount(page);await requestStarted;await unmount(page);
   assert.deepEqual(await resources(page),emptyResources);
+  const before=await counters(page);
   const response=page.waitForResponse('**/api/fleet-control/overview');
   release();await response;
-  await page.waitForFunction(()=>window.fleetOverviewCompleted===1);
+  await page.evaluate(async()=>{await window.fleetOverviewProcessed;await Promise.resolve();});
+  assert.equal((await counters(page)).retryCreated,before.retryCreated,'Late response allocated a retry after unmount');
+  assert.deepEqual(await resources(page),emptyResources);
   await page.clock.runFor(10000);
+  assert.equal((await counters(page)).retryCreated,before.retryCreated,'Late response allocated a retry after unmount');
+  assert.equal((await counters(page)).overviewRequests,1);
   assert.deepEqual(await resources(page),emptyResources,'Late response must not allocate a new retry after unmount');
   assert.equal(calls,1);
  }finally{release();await page.close();}
+}
+async function requestAfterUnmountCase(browser,url,errors){
+ const page=await createPage(browser,url,errors);
+ try{
+  await trackResources(page);
+  await page.route(endpoint,route=>route.fulfill({json:sample(1,{refreshing:false,current:true})}));
+  await mount(page);await page.getByRole('link',{name:'Healthprobe 1 →',exact:true}).waitFor();
+  await unmount(page);
+  await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+  assert.equal((await counters(page)).overviewRequests,1,'Unmount caused an overview fetch');
+ }finally{await page.close();}
 }
 (async()=>{
  const {startFleetHarness,mutations}=await import('./fleet-browser-harness.mjs');
@@ -131,6 +157,8 @@ async function lateResponseCase(browser,url,errors){
   checks.push('Real React unmount in the same document removes retry, poll, clock and visibility listener; no requests over two poll intervals; remount owns exactly one set');
   await lateResponseCase(browser,harness.url,errors);
   checks.push('An in-flight overview response completing after unmount cannot schedule another retry');
+  await requestAfterUnmountCase(browser,harness.url,errors);
+  checks.push('Synchronous browser-side fetch counter proves no overview request after unmount and visibility event');
 
   const resumed=await createPage(browser,harness.url,errors);let wakeups=0;
   await resumed.route(endpoint,async route=>{
@@ -150,10 +178,17 @@ async function lateResponseCase(browser,url,errors){
   for(const mutation of Object.keys(mutations)){
    const mutant=await startFleetHarness(mutation);
    try{
-    await assert.rejects(()=>cleanupCase(browser,mutant.url,errors),error=>{
+    const late=mutation==='late-response',request=mutation==='post-unmount-fetch';
+    const run=late?lateResponseCase:request?requestAfterUnmountCase:cleanupCase;
+    await assert.rejects(()=>run(browser,mutant.url,errors),error=>{
      assert.equal(error.code,'ERR_ASSERTION');
-     assert.match(error.message,/^React cleanup leaked tracked resources/);
-     assert.deepEqual(error.actual,{...emptyResources,[mutation]:1});
+     if(late||request){
+      assert.match(error.message,late?/^Late response allocated a retry after unmount/:/^Unmount caused an overview fetch/);
+      assert.equal(error.actual,late?1:2);assert.equal(error.expected,late?0:1);
+     }else{
+      assert.match(error.message,/^React cleanup leaked tracked resources/);
+      assert.deepEqual(error.actual,{...emptyResources,[mutation]:1});
+     }
      return true;
     });
     assert.equal(mutant.wasMutated(),true,'Negative control must modify the real component');

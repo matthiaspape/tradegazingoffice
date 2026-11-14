@@ -10,6 +10,8 @@ export const mutations = {
   poll: 'clearInterval(poll);',
   tick: 'clearInterval(tick);',
   visibility: "document.removeEventListener('visibilitychange',resume);",
+  'late-response': 'if(alive){\n     setData',
+  'post-unmount-fetch': 'if(!alive||!sessionReady||inFlight)return;',
 };
 
 // Only the isolated Vite transform changes; the checked-out application is never mutated.
@@ -25,6 +27,17 @@ export async function startFleetHarness(mutation) {
         if (id.split('?')[0] !== component) return;
         if (code.split(cleanup).length !== 2) throw new Error('Cleanup mutation anchor changed');
         transformed = true;
+        if (mutation === 'late-response') {
+          const guard = mutations[mutation];
+          if (code.split(guard).length !== 2) throw new Error('Late-response mutation anchor changed');
+          return code.replace(guard, '{\n     setData');
+        }
+        if (mutation === 'post-unmount-fetch') {
+          const guard = mutations[mutation];
+          if (code.split(guard).length !== 2) throw new Error('Fetch-guard mutation anchor changed');
+          return code.replace(guard, 'if(!sessionReady||inFlight)return;')
+            .replace(cleanup, cleanup.replace(mutations.visibility, ''));
+        }
         return code.replace(cleanup, cleanup.replace(mutations[mutation], ''));
       },
     }, react()].filter(Boolean),
