@@ -1,0 +1,23 @@
+{
+  "checked_at": "2026-11-14T15:51:50.832Z",
+  "synthetic_api": true,
+  "real_react_component": true,
+  "checks": [
+    "0030: all three demo curves end at their declared account equity, including stale fleet",
+    "0033: vps demo detail explicitly labels fictional data",
+    "0033: fleet demo detail explicitly labels fictional data",
+    "0033: vps detail CURRENT/CURRENT",
+    "0033: vps detail STALE/CURRENT",
+    "0033: vps detail STALE/STALE",
+    "0033: vps detail UNAVAILABLE/UNAVAILABLE",
+    "0033: fleet detail CURRENT/CURRENT",
+    "0033: fleet detail STALE/CURRENT",
+    "0033: fleet detail STALE/STALE",
+    "0033: fleet detail UNAVAILABLE/UNAVAILABLE",
+    "0032: expired session keeps original data, stops retries and requires explicit reload",
+    "0032: first overview 401 stays EA-less without automatic session renewal",
+    "0032: a source failure remains distinct and recovers on the normal poll"
+  ],
+  "failures": [],
+  "page_errors": []
+}

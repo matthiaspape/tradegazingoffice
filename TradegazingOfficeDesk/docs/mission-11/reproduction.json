@@ -1,0 +1,22 @@
+{
+  "source_commit": "5f9a97a",
+  "synthetic_api": true,
+  "real_react_component": true,
+  "checks_passed": 0,
+  "failures": 12,
+  "page_errors": [],
+  "examples": [
+    {
+      "name": "0030: all three demo curves end at their declared account equity, including stale fleet",
+      "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok((await card.locator('figcaption').innerText()).includes(`→ ${value} ·`))\n"
+    },
+    {
+      "name": "0033: vps detail CURRENT/CURRENT",
+      "error": "TimeoutError: locator.waitFor: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('group', { name: 'VPS-Datenstatus', exact: true }) to be visible\u001b[22m\n"
+    },
+    {
+      "name": "0032: expired session keeps original data, stops retries and requires explicit reload",
+      "error": "TimeoutError: locator.waitFor: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('alert').filter({ hasText: 'Office-Sitzung abgelaufen' }) to be visible\u001b[22m\n"
+    }
+  ]
+}

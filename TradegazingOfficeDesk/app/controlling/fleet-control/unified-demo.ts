@@ -16,7 +16,7 @@ export function demoOverview(): Overview {
   const f:Fleet={id:source.id,hostId:h.id,name:source.name,broker:i===1?'Beispielbroker B':'Beispielbroker A',deploymentId:`${source.id}-demo`,environment:'DEMO',currency:'EUR',
    observedAt,freshSeconds:900,state:i===2?'STALE':'CURRENT',status:i===0?'Active':i===1?'Inaktive':'Zuletzt Failure',sharedAccount:false,
    balance:values[0],equity:values[1],profitToday:values[2],unrealized:values[3],positionMode:'HEDGING',
-   series:Array.from({length:13},(_,n)=>({at:new Date(Date.parse(observedAt)-(12-n)*300000-(n<6&&i===2?300000:0)).toISOString(),value:(Number(values[1])+(n-12)*24+Math.sin(n)*35).toFixed(2)})),
+   series:Array.from({length:13},(_,n)=>({at:new Date(Date.parse(observedAt)-(12-n)*300000-(n<6&&i===2?300000:0)).toISOString(),value:n===12?values[1]:(Number(values[1])+(n-12)*24+Math.sin(n)*35).toFixed(2)})),
    reasons:i===2?['Letzter Fehlerstatus um 11:25. Aktueller Betrieb unbekannt; Quelle veraltet.']:['Fiktives Beispiel · kein nativer Flottenexport'],
    variants:source.variants.map(v=>({symbol:v.symbol,timeframe:null,pool:v.pool,revision:v.revision,ready:true})),
    pools:source.sample.pools.map(p=>({name:p.name,used:String(p.used),capacity:String(p.capacity)})),positions:[]};

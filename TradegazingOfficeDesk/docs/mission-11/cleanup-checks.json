@@ -1,0 +1,40 @@
+{
+  "checked_at": "2026-11-14T15:53:18.391Z",
+  "synthetic_api": true,
+  "real_react_component": true,
+  "checks": [
+    "Pending refresh becomes current after 2 seconds, without a five-minute delay",
+    "Still-pending refresh stops after six follow-ups",
+    "Real React unmount in the same document removes retry, poll, clock and visibility listener; no requests over two poll intervals; remount owns exactly one set",
+    "An in-flight overview response completing after unmount cannot schedule another retry",
+    "Synchronous browser-side fetch counter proves no overview request after unmount and visibility event",
+    "Returning to the visible Desk immediately refreshes after a long pause"
+  ],
+  "negative_controls": [
+    {
+      "removed_cleanup": "retry",
+      "detected": true
+    },
+    {
+      "removed_cleanup": "poll",
+      "detected": true
+    },
+    {
+      "removed_cleanup": "tick",
+      "detected": true
+    },
+    {
+      "removed_cleanup": "visibility",
+      "detected": true
+    },
+    {
+      "removed_cleanup": "late-response",
+      "detected": true
+    },
+    {
+      "removed_cleanup": "post-unmount-fetch",
+      "detected": true
+    }
+  ],
+  "page_errors": []
+}

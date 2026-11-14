@@ -13,6 +13,7 @@
     "migrate": "node ops/migrate.mjs",
     "test": "node --test tests/*.test.mjs",
     "test:fleet-browser": "node tests/fleet-freshness-browser.cjs",
+    "test:fleet-status": "node tests/fleet-status-browser.cjs",
     "typecheck": "tsc --noEmit",
     "backup": "node ops/backup.mjs",
     "mcp": "node ops/mcp-stdio.mjs",
