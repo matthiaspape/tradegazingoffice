@@ -1,0 +1,225 @@
+{
+  "checked_at": "2026-11-14T11:05:08.836Z",
+  "preview_only": true,
+  "views": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "route": "overview",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "route": "vps/atlas",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "route": "vps/borealis",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "route": "fleet/nova",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "route": "fleet/vega",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "route": "fleet/orion",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "route": "overview",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "route": "vps/atlas",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "route": "vps/borealis",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "route": "fleet/nova",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "route": "fleet/vega",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "route": "fleet/orion",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "route": "overview",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "route": "vps/atlas",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "route": "vps/borealis",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "route": "fleet/nova",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "route": "fleet/vega",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "route": "fleet/orion",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "route": "overview",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "route": "vps/atlas",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "route": "vps/borealis",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "route": "fleet/nova",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "route": "fleet/vega",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "route": "fleet/orion",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "route": "overview",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "route": "vps/atlas",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "route": "vps/borealis",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "route": "fleet/nova",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "route": "fleet/vega",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "route": "fleet/orion",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "route": "overview",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "route": "vps/atlas",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "route": "vps/borealis",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "route": "fleet/nova",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "route": "fleet/vega",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "route": "fleet/orion",
+      "passed": true
+    }
+  ],
+  "interactions": "Card click, VPS link, keyboard Enter, history, EA-less state, direct detail reload, unknown route",
+  "page_errors": [],
+  "http_requests": []
+}
