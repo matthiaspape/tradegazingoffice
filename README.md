@@ -12,6 +12,8 @@ Das lokale Desk verbindet Controlling und Projektmanagement. Aus dem Aunerio-Des
 
 Beide Bereiche verwenden den gemeinsamen Rahmen mit originaler Tradegazing-CI, responsiver Navigation sowie Hell- und Dunkelmodus. Das [gemeinsame UI/UX-Konzept](docs/TradegazingOfficeDeskUX.md) beschreibt auch die späteren Ausbaustufen. Die [klickbare Designvorschau](design/tradegazing-office-desk/index.html) hält den früheren Entwurf fest.
 
+Seit 14.11.2026 ist [Office-Mission 7](http://127.0.0.1:43120/missions?mission=7) **geplant**: ein Konzept soll das Design aus Office-Mission 6 mit Collector und VPS-Health aus Tradegazing-Mission 650 verbinden. Ziel sind VPS-Karten mit verschachtelten Flottenkarten sowie eigene VPS- und Flottendetails. Projektmanagement und Folgeplanung liegen im Tradegazing Office. Die getrennte Monitoring-Implementierung liefert bereits native Hostdaten; ihre Verbindung mit dieser Office-Oberfläche ist noch nicht umgesetzt. [Einordnung und Quellen](ArchitekturDraft.md)
+
 Start, MCP/CLI, Datenablage und Prüfbelege: [TradegazingOfficeDesk/README.md](TradegazingOfficeDesk/README.md). Auf diesem Mac: `cd TradegazingOfficeDesk` und `./desk launch`; die Abhängigkeiten, Einrichtung und der Build müssen vorhanden sein. Die lokale Projektmanagement-Laufzeit ist Node.js 24+ mit React/vinext und SQLite.
 
 Arbeitsweise seit Nutzerauftrag vom 04.11.2026: Neue Aufgaben erhalten automatisch eine thematische Mission; abgeschlossene Zwischenstände werden zeitnah committet. Nach fachlichem Abschluss folgen geordnetes Cleanup, finaler Commit/Push und administrativer Missionsabschluss. Details und Grenzen stehen in [AGENTS.md](AGENTS.md) und im [Missionsworkflow](TradegazingOfficeDesk/docs/MISSION_WORKFLOW.md).
