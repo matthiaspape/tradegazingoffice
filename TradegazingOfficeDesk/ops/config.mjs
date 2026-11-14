@@ -4,4 +4,6 @@ import { fileURLToPath } from 'node:url';
 export const projectRoot = fileURLToPath(new URL('../../', import.meta.url));
 export const deskHome = () => resolve(process.env.TRADEGAZING_OFFICE_DESK_HOME || resolve(projectRoot, '.office-desk-data'));
 export const databasePath = () => resolve(deskHome(), 'missions.sqlite');
-export const origin = 'http://127.0.0.1:43120';
+const port = Number(process.env.TRADEGAZING_OFFICE_DESK_PORT || 43120);
+if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Ungültiger lokaler Office-Port.');
+export const origin = `http://127.0.0.1:${port}`;

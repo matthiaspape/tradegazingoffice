@@ -15,9 +15,10 @@ type Props = {
   children: ReactNode;
   className?: string;
   detail?: string;
+  fleetMode?: 'DEMO' | 'NATIVE';
 };
 
-export default function DeskShell({ current, children, className = '', detail }: Props) {
+export default function DeskShell({ current, children, className = '', detail, fleetMode = 'DEMO' }: Props) {
   const fleet = current === 'fleet';
   const title = titles[current];
 
@@ -34,7 +35,7 @@ export default function DeskShell({ current, children, className = '', detail }:
           {detail && <> <span aria-hidden="true">/</span> {detail}</>}
         </p>
         <div className="office-tools">
-          {fleet && <span className="office-demo">Fiktive Beispieldaten</span>}
+          {fleet && <span className="office-demo">{fleetMode === 'DEMO' ? 'Fiktive Beispieldaten' : 'Lesende VPS-Anbindung'}</span>}
           <ThemeToggle />
         </div>
       </header>

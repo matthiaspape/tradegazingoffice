@@ -1,0 +1,54 @@
+{
+  "checked_at": "2026-11-14T11:31:40.000Z",
+  "qa_origin": "http://127.0.0.1:43121",
+  "checks": [
+    {
+      "width": 1440,
+      "theme": "light",
+      "view": "overview"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "view": "overview"
+    },
+    {
+      "width": 1440,
+      "view": "native + details + keyboard + history + PM",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "view": "overview"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "view": "overview"
+    },
+    {
+      "width": 390,
+      "view": "native + details + keyboard + history + PM",
+      "passed": true
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "view": "overview"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "view": "overview"
+    },
+    {
+      "width": 320,
+      "view": "native + details + keyboard + history + PM",
+      "passed": true
+    }
+  ],
+  "page_errors": [],
+  "native": "One real host, EA-less; no trading source fabricated",
+  "writes": "No application data writes; session bootstrap only"
+}

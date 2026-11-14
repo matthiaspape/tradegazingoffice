@@ -11,7 +11,7 @@ desk_command="${1:-help}"
 if [ "$#" -gt 0 ]; then shift; fi
 case "$desk_command" in
   call) exec "$desk_node" ops/mcp-call.mjs "$@" ;;
-  setup|launch|stop|backup|migrate|restore|license-inventory|bug-schema) exec "$desk_node" "ops/$desk_command.mjs" "$@" ;;
+  setup|launch|stop|backup|migrate|restore|license-inventory|bug-schema|connect-fleet) exec "$desk_node" "ops/$desk_command.mjs" "$@" ;;
   build) exec "$desk_node" node_modules/vinext/dist/cli.js build "$@" ;;
   typecheck) exec "$desk_node" node_modules/typescript/bin/tsc --noEmit "$@" ;;
   test) exec "$desk_node" --test tests/*.test.mjs "$@" ;;
