@@ -1,0 +1,11 @@
+{
+  "source_commit": "96818bf",
+  "test": "node --test tests/fleet-harness.test.mjs",
+  "occupied_start_port": 5173,
+  "simultaneous_harnesses": 2,
+  "exit_code": 1,
+  "failed_starts": 2,
+  "expected_failed_starts": 0,
+  "errors": ["Port 5173 is already in use", "Port 5173 is already in use"],
+  "product_or_vps_affected": false
+}

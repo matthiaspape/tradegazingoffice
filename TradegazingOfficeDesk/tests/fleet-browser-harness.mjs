@@ -20,7 +20,8 @@ export async function startFleetHarness(mutation) {
   let transformed = false;
   const server = await createServer({
     configFile: false, root, publicDir: false, appType: 'mpa', logLevel: 'error',
-    server: {host: '127.0.0.1', port: 0, strictPort: true},
+    // Vite 8 treats port 0 as its default. Let its bind/retry logic handle occupied ports.
+    server: {host: '127.0.0.1', port: 5173, strictPort: false},
     plugins: [mutation && {
       name: 'test-only-cleanup-mutation', enforce: 'pre',
       transform(code, id) {

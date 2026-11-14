@@ -131,12 +131,14 @@ async function requestAfterUnmountCase(browser,url,errors){
  }finally{await page.close();}
 }
 (async()=>{
+ const startedAt=new Date().toISOString();
  const {startFleetHarness,mutations}=await import('./fleet-browser-harness.mjs');
  const browser=await chromium.launch(browserOptions());
  const errors=[],checks=[],negativeControls=[];
- let harness;
+ let harness,origin;
  try{
   harness=await startFleetHarness();
+  origin=new URL(harness.url).origin;
   const p=await createPage(browser,harness.url,errors);let calls=0;
   await p.route(endpoint,route=>route.fulfill({json:sample(++calls,{refreshing:calls===1,current:calls>1})}));
   await mount(p);await p.getByRole('link',{name:'Healthprobe 1 →',exact:true}).waitFor();
@@ -198,7 +200,7 @@ async function requestAfterUnmountCase(browser,url,errors){
   assert.deepEqual(errors,[]);
   const output=resolve(process.env.FLEET_BROWSER_REPORT||resolve(__dirname,'../work/fleet-freshness-browser.json'));
   mkdirSync(dirname(output),{recursive:true});
-  writeFileSync(output,JSON.stringify({checked_at:new Date().toISOString(),synthetic_api:true,real_react_component:true,checks,negative_controls:negativeControls,page_errors:errors},null,2)+'\n');
+  writeFileSync(output,JSON.stringify({started_at:startedAt,checked_at:new Date().toISOString(),isolated_origin:origin,synthetic_api:true,real_react_component:true,checks,negative_controls:negativeControls,page_errors:errors},null,2)+'\n');
   console.log(JSON.stringify({checks:checks.length,negative_controls:negativeControls.length,page_errors:errors.length,synthetic_api:true}));
  }finally{if(harness)await harness.close();await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

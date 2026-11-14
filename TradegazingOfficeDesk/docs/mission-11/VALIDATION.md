@@ -2,6 +2,8 @@
 
 Stand 14.11.2026 · Office-Mission 11
 
+Nachtrag: Der hier historisch zurückgestellte Portkonflikt OFFICE-BUG-0035 wird im gesonderten Nutzerauftrag [Mission 12](../mission-12/VALIDATION.md) behoben; die Browserläufe sind dort parallel geprüft. Die damaligen M11-Prüfungen und Reviewentscheidung bleiben erhalten.
+
 ## Auftrag und Änderung
 
 Die drei zuvor niedrigen und zurückgestellten M8-Befunde werden auf ausdrücklichen Nutzerauftrag behoben. Ihre Einstufung bleibt NIEDRIG; keine künstliche Hochstufung. Der Demofall tritt im alten Stand sicher auf, die native Nutzungshäufigkeit langer Sitzungen und Details bleibt unbekannt.
@@ -41,4 +43,4 @@ Dreamteam-Claude-Review `b22dccdec01d4c6f9a1fc5774e6296ad`, Paket `ed7a566d94695
 
 Quellstand `75367ea` wurde am 14.11.2026 innerhalb der bereits ausdrücklich erteilten Office-Freigabe regulär auf 43120 gestartet. Erster authentisierter Betriebsabruf um 15:59:08 UTC: **HTTP 200, NATIVE, ein CURRENT-Host, null Flotten, refreshing=false**. EA-Exporte fehlen weiterhin. Private Betriebsquittung `.office-desk-data/dreamteam/mission-11-activation.json`. Vorhandener Mac-App-Einstieg bleibt auf 43120; Office-Daten, Macbackend8766 und VPS-/MT5-Dienste erhalten. Keine neuen Readerrechte, keine weitere Dienst-/MT5-Einrichtung.
 
-OFFICE-BUG-0030/0032/0033 sind gezielt behoben. OFFICE-BUG-0035 bleibt niedrig zurückgestellt, serielle Tests sind die vorhandene sichere Fortsetzung. Eigene Testressourcen sind beendet; benötigte Prüf-/Reviewbelege erhalten. Abschluss und Kontextpflege verwenden die erfolgreichen Belege ohne zusätzliche Rücklese-/Gesamtprüfserie.
+OFFICE-BUG-0030/0032/0033 sind gezielt behoben. OFFICE-BUG-0035 blieb im M11-Abschluss niedrig zurückgestellt; die damals verwendete sichere Fortsetzung waren serielle Tests. Der aktuelle Nachtrag aus Mission 12 ist oben verlinkt. Eigene Testressourcen sind beendet; benötigte Prüf-/Reviewbelege erhalten. Abschluss und Kontextpflege verwenden die erfolgreichen Belege ohne zusätzliche Rücklese-/Gesamtprüfserie.

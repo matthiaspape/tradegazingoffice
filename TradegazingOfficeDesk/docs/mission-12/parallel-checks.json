@@ -1,0 +1,19 @@
+{
+  "concurrent_cli_runs": true,
+  "overlap_seconds": 5.74,
+  "status_origin": "http://127.0.0.1:5174",
+  "cleanup_origin": "http://127.0.0.1:5173",
+  "status_checks": 14,
+  "cleanup_checks": 6,
+  "negative_controls": 6,
+  "occupied_port_regression": {
+    "checked_at": "2026-11-14T17:34:46.261Z",
+    "occupied_start_port": 5173,
+    "own_occupant": true,
+    "concurrent_ports": [
+      5174,
+      5175
+    ],
+    "independent_close": true
+  }
+}

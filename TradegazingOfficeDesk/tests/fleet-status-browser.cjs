@@ -10,6 +10,7 @@ function sample({state='CURRENT',connection='CURRENT'}={}){
  return {mode:'NATIVE',asOf:new Date(time).toISOString(),refreshing:false,hosts:[{id:'test',name:'Test-VPS',ip:'192.0.2.10',observedAt,state,connection,lastPull:'2026-11-14T11:59:55Z',issue:null,cpu:42,cpuMax:50,ram:{percent:50,used:500,total:1000},volumes:[],samples:20,cpuSamples:20,expected:20,attention:[],waitingForEa:false,unboundAccounts:0,series:[],processes:[],fleets:[fleet]}]};
 }
 (async()=>{
+ const startedAt=new Date().toISOString();
  const {startFleetHarness}=await import('./fleet-browser-harness.mjs');
  const harness=await startFleetHarness();let browser;
  const checks=[],failures=[],errors=[];
@@ -107,7 +108,7 @@ function sample({state='CURRENT',connection='CURRENT'}={}){
   });
   assert.deepEqual(errors,[]);
   const output=resolve(process.env.FLEET_STATUS_REPORT||resolve(__dirname,'../work/fleet-status-browser.json'));mkdirSync(dirname(output),{recursive:true});
-  writeFileSync(output,JSON.stringify({checked_at:new Date().toISOString(),synthetic_api:true,real_react_component:true,checks,failures,page_errors:errors},null,2)+'\n');
+  writeFileSync(output,JSON.stringify({started_at:startedAt,checked_at:new Date().toISOString(),isolated_origin:new URL(harness.url).origin,synthetic_api:true,real_react_component:true,checks,failures,page_errors:errors},null,2)+'\n');
   console.log(JSON.stringify({checks:checks.length,failures:failures.length,page_errors:errors.length}));
   if(failures.length)throw new Error(JSON.stringify(failures));
  }finally{await harness.close();if(browser)await browser.close();}

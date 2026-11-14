@@ -1,0 +1,10 @@
+{
+  "checked_at": "2026-11-14T17:34:46.261Z",
+  "occupied_start_port": 5173,
+  "own_occupant": true,
+  "concurrent_ports": [
+    5174,
+    5175
+  ],
+  "independent_close": true
+}

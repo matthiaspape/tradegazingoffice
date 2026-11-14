@@ -28,7 +28,7 @@ npm run test:fleet-browser
 
 Der Test startet und beendet seinen eigenen HTTP-Server auf einem freien Loopback-Port. Er benötigt weder laufenden Office Desk noch Datenbank, Readergrant, echte VPS-Quelle oder Zugangsdaten. Sitzung und Overview werden ausschließlich mit synthetischen Antworten bedient. Der normale Bericht liegt unter `work/fleet-freshness-browser.json`; `FLEET_BROWSER_REPORT` kann einen anderen Ausgabepfad wählen. Es gibt keine zusätzliche produktive Einrichtung oder Deploymentaktion.
 
-Bekannte Betriebsgrenze seit Mission 11: Die beiden Fleet-Browserläufe seriell starten. Vite kann trotz `port: 0` auf 5173 kollidieren; OFFICE-BUG-0035 ist als niedriger Nebenbefund zurückgestellt. Der serielle Ablauf besteht, frühere Cleanup-Fachnachweise bleiben erhalten. [Aktueller Befund](mission-11/VALIDATION.md).
+Der in Mission 11 erfasste Portkonflikt OFFICE-BUG-0035 wird durch Mission 12 gezielt behoben: Vites Portausweichlogik bindet bei Belegung einen anderen Port; beide tatsächlichen Browserläufe sind parallel erfolgreich geprüft. Frühere Cleanup-Fachnachweise bleiben erhalten. [Parallelprüfung und Grenzen](mission-12/VALIDATION.md).
 
 ## Tatsächliche Belege und Grenzen
 
