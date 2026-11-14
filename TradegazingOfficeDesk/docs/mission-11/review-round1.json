@@ -1,0 +1,52 @@
+{
+  "review_id": "b22dccdec01d4c6f9a1fc5774e6296ad",
+  "submission_sha256": "ed7a566d946953d3ad1280c5cfeb0bc8ed6b75b8de3f06ae2e364625f66b3492",
+  "provider": {
+    "kind": "claude",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "review": {
+    "criteria_results": [
+      {
+        "criterion_id": "C1",
+        "evidence": "unified-demo.ts: value bei n===12 ist values[1], also der unveränderte Equitystring. Die Punkte davor bleiben dekorativ. Die Flotte mit i===2 behält state 'STALE' und observedAt 10:25. Der Plot liest den letzten Punkt im Bereich asOf-24h. fleet-model.mjs und die native Berechnung sind unverändert. Der Test prüft für alle drei Karten '→ <Wert> ·' in der figcaption, den Wert in .fc-values und den Chip 'Daten fehlen / veraltet'.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C2",
+        "evidence": "FleetControl.tsx: Bei r.status===401 werden sessionReady=false, setSessionExpired(true) und die Fehlermeldung 'Office-Sitzung abgelaufen …' gesetzt, danach folgt return ohne setData. Der Guard '!sessionReady' blockiert danach Poll, Retry und Sichtbarkeitswechsel. Der Sitzungs-POST läuft nur einmal beim Mount. Der Button 'Seite neu laden' ruft location.reload() auf und wird nur bei sessionExpired angezeigt. fresh() liefert wegen !error den Wert false, deshalb verlieren Chips und Werte die Kennzeichnung als aktuell. 'Beobachtet' bleibt erhalten. Ein 503 läuft über den bestehenden throw/catch-Pfad, zeigt keinen Button und wird beim nächsten erfolgreichen Poll durch setError('') zurückgesetzt. auth.mjs ist unverändert, Max-Age bleibt 43200.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C3",
+        "evidence": "detailStatus rendert role=group mit aria-label 'VPS-Datenstatus' bzw. 'Flotten-Datenstatus'. Darin stehen die gemeinsamen Chips healthChip/fleetChip, die auch hostCard und fleetCard verwenden, ein Chip 'Datenquelle: …', die Zeile 'Verbindung: aktuell/veraltet/nicht verfügbar' (aus h.connection, getrennt von state und observedAt) und 'Letzter Backendabruf'. Der Demo-Präfix lautet 'fiktiv · '. Bei sessionExpired oder error zeigt die Zeile 'nicht geprüft (…)' statt eines VPS-Ausfalls. Die Flottendetails nutzen den Host aus fleet.hostId.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C4",
+        "evidence": "fleet-status-browser.cjs prüft mit der echten Komponente, synthetischen Routen und clock.pauseAt: alle drei Demokurven; die Demo-Details für VPS und Flotte; die Zustände CURRENT/CURRENT, STALE/CURRENT, STALE/STALE und UNAVAILABLE/UNAVAILABLE für beide Detailtypen; 401 nach vorhandenen Daten (calls bleibt 2 nach 15 min und Sichtbarkeitswechsel, sessions=1, Reload führt zu sessions=2 und calls=3); den ersten 401 (calls=1, keine Demo-Karten); die Erholung nach 503 (calls=3, kein Alert mehr). Der Cleanup-Lauf meldet 6 Abläufe und 6 Negativkontrollen; die Mutationsanker in FleetControl bleiben unverändert. Typecheck und Build sind als Entwicklerevidenz angegeben. VALIDATION.md grenzt einen nativen 12-Stunden-Test, Windows/Linux und Default-Chromium ausdrücklich aus.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C5",
+        "evidence": "Produktänderungen gibt es nur in FleetControl.tsx und unified-demo.ts. Keine Änderungen an auth.mjs, Reader, Modell oder Betrieb, keine Secrets. Die Dokumentation in README und ArchitekturDraft ergänzt M11, ohne historische M8–M10-Entscheidungen umzuschreiben. OFFICE-BUG-0035 steht als NIEDRIG in VALIDATION.md, FLEET_CLEANUP_TEST.md und AGENTS.md, jeweils mit serieller Fortsetzung, ohne Reparatur und ohne behauptete Gesamtfreigabe. Der Test schließt Seiten per finally pro Fall sowie Harness und Browser im äußeren finally.",
+        "passed": true
+      }
+    ],
+    "decision": "APPROVED",
+    "findings": [],
+    "resolved_findings": [],
+    "review_id": "b22dccdec01d4c6f9a1fc5774e6296ad",
+    "submission_sha256": "ed7a566d946953d3ad1280c5cfeb0bc8ed6b75b8de3f06ae2e364625f66b3492",
+    "summary": "Ich habe nur das eingereichte M11-Paket geprüft: den Diff und die mitgelieferten Dateien FleetControl.tsx, unified-demo.ts, fixtures/main.tsx, fleet-status-browser.cjs, harness, auth.mjs, fleet-model.mjs und die Dokumentation. Ich habe selbst keine Tests ausgeführt; alle Testergebnisse stammen vom Entwickler. 0030: Der letzte Punkt jeder Demokurve übernimmt jetzt exakt den String values[1]. Die Stale-Flotte bleibt STALE. 0032: Bei einem Overview401 wird sessionReady=false gesetzt. Damit brechen alle späteren Aufrufe von refresh (Poll, Retry, Sichtbarkeitswechsel) früh ab. Es gibt keinen erneuten Sitzungs-POST. data bleibt unverändert, und fresh() entzieht wegen !error die Kennzeichnung als aktuell. Der Reload-Button erscheint nur bei abgelaufener Sitzung. Ein 503 läuft weiter über den regulären Fehlerpfad und erholt sich beim nächsten Poll. auth.mjs ist unverändert, die 12-Stunden-Regel bleibt also bestehen. 0033: Die Chips healthChip und fleetChip werden von Karten und Detailköpfen gemeinsam verwendet. Die Datenquelle wird angezeigt, der Verbindungszustand CURRENT/STALE/UNAVAILABLE wird getrennt von der Frische der Messung abgebildet, und der letzte Backendabruf steht dabei. Im Demo-Modus ist der Status ausdrücklich als 'fiktiv' gekennzeichnet. Bei lokalen Fehlern steht dort 'nicht geprüft' statt eines behaupteten VPS-Ausfalls. Das Ganze ist eine role=group mit aria-label und Textinhalt. Die 14 Browserfälle decken die geforderte Matrix gezielt ab. Der Portkonflikt OFFICE-BUG-0035 ist ehrlich als niedriger Nebenbefund mit serieller Fortsetzung dokumentiert. Ich habe keine konkreten Defekte gefunden, die eine Korrektur verlangen.",
+    "unverified": [
+      "Tatsächliche Ausführung und Ergebnisse von fleet-status-browser.cjs (14 Fälle), fleet-freshness-browser.cjs (6 Abläufe und 6 Negativkontrollen), Typecheck und Build: alles vom Entwickler gemeldet, vom Reviewer nicht ausgeführt.",
+      "Reproduktion am alten Stand 5f9a97a (12 Fehlschläge): nur über reproduction.json belegt.",
+      "Pflege des Bug-Boards für OFFICE-BUG-0035 sowie unveränderter Erhalt historischer Review-Einträge außerhalb der eingereichten Diff-Abschnitte.",
+      "Ursache des Vite-Portkonflikts mit port:0/strictPort auf 5173: nur laut Entwicklerbericht beobachtet.",
+      "Verhalten mit Default-Chromium, unter Windows/Linux und ein nativer 12-Stunden-Sitzungsablauf: laut Dokumentation ausdrücklich nicht geprüft."
+    ]
+  },
+  "test_evidence_kind": "developer-reported, not executed by this bridge"
+}

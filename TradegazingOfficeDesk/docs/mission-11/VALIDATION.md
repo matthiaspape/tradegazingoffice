@@ -35,4 +35,10 @@ Standardberichte landen unter `work/`; `FLEET_STATUS_REPORT` und `FLEET_BROWSER_
 
 **OFFICE-BUG-0035, NIEDRIG, Wahrscheinlichkeit HOCH beim parallelen Start:** Zwei eigene Vite-Testserver mit `port: 0` kollidierten tatsächlich auf 5173. Der Statuslauf bestand, der gleichzeitig gestartete Cleanup-Lauf brach vor der Prüfung mit „Port 5173 is already in use“ ab. Der anschließende serielle Cleanup-Lauf bestand vollständig. Der Fehler betrifft den parallelen Teststart, keine Produkt- oder VPS-Daten. Die sichere serielle Fortsetzung ist vorhanden; die Portverwaltung wird in dieser Mission bewusst nicht repariert. Frühere M10-Fachnachweise bleiben erhalten; paralleler Betrieb ist durch sie nicht belegt.
 
-Die unabhängige Dreamteam-Prüfung bewertet das gezielte M11-Paket. Historische M8-/M9-/M10-Entscheidungen und nicht geprüfte Bereiche bleiben erhalten. Reguläre Aktivierung der Nachbesserung erfolgt innerhalb der bereits erteilten Office-Freigabe; keine neue Dienst-/MT5-Einrichtung.
+## Unabhängige Abnahme und Aktivierung
+
+Dreamteam-Claude-Review `b22dccdec01d4c6f9a1fc5774e6296ad`, Paket `ed7a566d946953d3ad1280c5cfeb0bc8ed6b75b8de3f06ae2e364625f66b3492`: **APPROVED, C1–C5 bestanden**, keine offenen Reviewbefunde. [Originalfeedback](review-round1.json). Die Abnahme gilt für das eingereichte gezielte M11-Paket; Claude hat keine Tests selbst ausgeführt. Historische M8-/M9-/M10-Entscheidungen und nicht geprüfte Bereiche bleiben erhalten.
+
+Quellstand `75367ea` wurde am 14.11.2026 innerhalb der bereits ausdrücklich erteilten Office-Freigabe regulär auf 43120 gestartet. Erster authentisierter Betriebsabruf um 15:59:08 UTC: **HTTP 200, NATIVE, ein CURRENT-Host, null Flotten, refreshing=false**. EA-Exporte fehlen weiterhin. Private Betriebsquittung `.office-desk-data/dreamteam/mission-11-activation.json`. Vorhandener Mac-App-Einstieg bleibt auf 43120; Office-Daten, Macbackend8766 und VPS-/MT5-Dienste erhalten. Keine neuen Readerrechte, keine weitere Dienst-/MT5-Einrichtung.
+
+OFFICE-BUG-0030/0032/0033 sind gezielt behoben. OFFICE-BUG-0035 bleibt niedrig zurückgestellt, serielle Tests sind die vorhandene sichere Fortsetzung. Eigene Testressourcen sind beendet; benötigte Prüf-/Reviewbelege erhalten. Abschluss und Kontextpflege verwenden die erfolgreichen Belege ohne zusätzliche Rücklese-/Gesamtprüfserie.
