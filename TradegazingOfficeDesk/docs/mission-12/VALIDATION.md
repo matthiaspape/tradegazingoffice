@@ -34,4 +34,13 @@ FLEET_BROWSER_CHANNEL=chrome npm run test:fleet-browser
 
 Ohne Kanal oder eigenen Executable verwendet der Test wie bisher das installierte Playwright-Chromium. Der neue Port-Regressionsfall ist über `node --test tests/fleet-harness.test.mjs` ausführbar und Teil der vorhandenen Node-Testauswahl. Ist 5173 bereits fremd belegt, beendet oder verändert der Test dessen Besitzer nicht; er führt dann keinen Zugriff auf diesen fremden Dienst aus. Bei eigener Reservierung wird zusätzlich deren Fortbestehen geprüft.
 
-Browser und Testserver werden durch die jeweiligen `finally`-Blöcke beendet. Keine Testdatenbank, Authentisierung oder echte VPS-Quelle nötig. Standardberichte liegen unter `work/`; `FLEET_HARNESS_REPORT`, `FLEET_STATUS_REPORT` und `FLEET_BROWSER_REPORT` können getrennte Ausgabepfade wählen. Alte Missionsberichte und tatsächliche Reviewentscheidungen bleiben historisch erhalten. Das unabhängige Dreamteam-Review bewertet den gezielten M12-Stand.
+Browser und Testserver werden durch die jeweiligen `finally`-Blöcke beendet. Keine Testdatenbank, Authentisierung oder echte VPS-Quelle nötig. Standardberichte liegen unter `work/`; `FLEET_HARNESS_REPORT`, `FLEET_STATUS_REPORT` und `FLEET_BROWSER_REPORT` können getrennte Ausgabepfade wählen. Alte Missionsberichte und tatsächliche Reviewentscheidungen bleiben historisch erhalten. Die unabhängige Bewertung des gezielten M12-Stands folgt unten.
+
+
+## Unabhängige Abnahme und Abschluss
+
+Dreamteam-Claude-Review `d7d9b6ed261340f49732f12da6e65621`, Paket `7c26d2898d673858a966ee643a1dd69df673a72853631d08b1f0c95ad5a72f22`: **APPROVED, C1–C4 bestanden**, keine offenen Findings. [Originalfeedback](review-round1.json). Die Abnahme gilt für das eingereichte M12-Paket; der Reviewer hat selbst keine Tests ausgeführt. Testquellstand `1e30239`; danach nur Abschlussdokumentation und Board-/Corepflege.
+
+Die gemessene Überlappung beschreibt die beiden CLI-Prozesslaufzeiten, nicht separat protokollierte Bindungszeitpunkte. Welcher andere eigene Testserver den jeweiligen Port gerade belegte, wird daraus nicht abgeleitet. Der zusätzliche Node-Test belegt die tatsächliche gleichzeitige Bindung und unabhängige Lebensdauer der beiden Harnesses bei gehaltenem Startport. Dies ist der bestätigte gezielte Nachweis, keine neue Gesamt-/Plattformqualifikation.
+
+OFFICE-BUG-0035 ist damit gezielt behoben. Eigene Testserver, Browser und eigener Portbesitzer wurden durch die erfolgreichen Testabläufe beendet; keine Testdatenbank angelegt. Regulärer Office Desk, Macbackend und VPS-/MT5-Betrieb bleiben unverändert. Vorhandene erfolgreiche Quittungen und Nachweise tragen den Abschluss ohne zusätzliche Rücklese-/Prüfserie.

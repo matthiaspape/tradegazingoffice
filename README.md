@@ -14,7 +14,7 @@ Office-Mission 9 behebt OFFICE-BUG-0031 im regulären Desk: erfolgreiche Abrufe 
 
 Office-Mission 11 behebt OFFICE-BUG-0030/0032/0033 im regulären Desk: Demokurven enden beim erklärten Equitywert, Sitzungsablauf verlangt bewussten Reload und beide Detailseiten zeigen Frische, Datenquelle und VPS-Verbindung getrennt. 14 Statusfälle sowie sechs Cleanup-Abläufe mit sechs Negativkontrollen, Typecheck und Build bestanden. Dreamteam APPROVED 5/5; neuer Stand auf 43120 aktiviert. [Prüfung und Grenzen](TradegazingOfficeDesk/docs/mission-11/VALIDATION.md).
 
-Office-Mission 12 behebt OFFICE-BUG-0035 am gemeinsamen Testserver: belegte Ports werden über Vites Bind-/Retry-Logik umgangen. Beide Browserläufe bestehen gleichzeitig mit 14 Statusfällen, sechs Cleanup-Abläufen und sechs Negativkontrollen; Produkt und regulärer Betrieb bleiben unverändert. [Parallelprüfung](TradegazingOfficeDesk/docs/mission-12/VALIDATION.md).
+Office-Mission 12 behebt OFFICE-BUG-0035 am gemeinsamen Testserver (Dreamteam APPROVED 4/4): belegte Ports werden über Vites Bind-/Retry-Logik umgangen. Beide Browserläufe bestehen gleichzeitig mit 14 Statusfällen, sechs Cleanup-Abläufen und sechs Negativkontrollen; Produkt und regulärer Betrieb bleiben unverändert. [Parallelprüfung](TradegazingOfficeDesk/docs/mission-12/VALIDATION.md).
 
 Beide Bereiche verwenden den gemeinsamen Rahmen mit originaler Tradegazing-CI, responsiver Navigation sowie Hell- und Dunkelmodus. Das [gemeinsame UI/UX-Konzept](docs/TradegazingOfficeDeskUX.md) beschreibt auch die späteren Ausbaustufen. Die [klickbare Designvorschau](design/tradegazing-office-desk/index.html) hält den früheren Entwurf fest.
 

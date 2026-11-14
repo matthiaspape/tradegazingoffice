@@ -1,0 +1,47 @@
+{
+  "review_id": "d7d9b6ed261340f49732f12da6e65621",
+  "submission_sha256": "7c26d2898d673858a966ee643a1dd69df673a72853631d08b1f0c95ad5a72f22",
+  "provider": {
+    "kind": "claude",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "review": {
+    "criteria_results": [
+      {
+        "criterion_id": "C1",
+        "evidence": "In fleet-browser-harness.mjs the server is configured as {host:'127.0.0.1', port:5173, strictPort:false}. The URL is built from server.httpServer.address().port. According to the submitted Vite excerpt, httpServerStart does not throw on EADDRINUSE without strictPort but tries the next port, so a port taken while binding is also covered. The harness has no probe, release or rebind of its own, no per-suite ports and no logic that stops processes.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C2",
+        "evidence": "fleet-harness.test.mjs keeps 5173 occupied and starts two harnesses with Promise.allSettled. It asserts 0 failed starts, 2 different ports other than 5173, HTTP 200 with the fixture title, that the second harness still works after the first is closed, and that the marker response from its own holder of 5173 is unchanged. reproduction.json (96818bf) shows the red run: exit 1 and 2× 'Port 5173 is already in use'. port-check.json shows the green run: ports 5174/5175, own_occupant true. The two CLI reports are status-checks.json (5174, 46.196 to 51.936) and cleanup-checks.json (5173, 46.195 to 02.028). Their windows overlap by 5.740 s, matching parallel-checks.json.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C3",
+        "evidence": "status-checks.json lists 14 checks with failures [] and page_errors []. cleanup-checks.json lists 6 checks and 6 negative controls (retry, poll, tick, visibility, late-response, post-unmount-fetch), all detected:true. The negative-control logic in fleet-freshness-browser.cjs is unchanged. Harness and browser are closed in finally blocks, including the mutant harnesses and both servers in the Node test plus its own port holder. The diff touches only tests/docs. FleetControl.tsx, package.json and the operations docs are unchanged, and no deployment is claimed.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C4",
+        "evidence": "mission-12/VALIDATION.md describes the cause (port 0 treated as falsy, falling back to 5173 with strictPort), the fix and its limits (Chrome channel only, no other platforms). In mission-11/VALIDATION.md, OFFICE-BUG-0035 is now worded in the past tense ('blieb im M11-Abschluss … zurückgestellt'), plus an addendum. It isn't relabelled as a parallel acceptance. Typecheck/build from M11 are explicitly carried over and not re-run. The Node warning about the interrupted dependency scan on immediate close is disclosed as a side note. Both browser runs are reported with exit 0 and no failed checks are left out.",
+        "passed": true
+      }
+    ],
+    "decision": "APPROVED",
+    "findings": [],
+    "resolved_findings": [],
+    "review_id": "d7d9b6ed261340f49732f12da6e65621",
+    "submission_sha256": "7c26d2898d673858a966ee643a1dd69df673a72853631d08b1f0c95ad5a72f22",
+    "summary": "This is a small fix that only touches the test harness, and I'm approving it. The change in tests/fleet-browser-harness.mjs replaces {port:0, strictPort:true} with {port:5173, strictPort:false} and keeps host 127.0.0.1. The harness still builds its URL from the port the server actually bound. The submitted Vite 8.0.13 excerpt explains the original problem: with strictPort, the first EADDRINUSE throws \"Port 5173 is already in use\". It also shows that without strictPort, an EADDRINUSE from tryBindServer just moves on to the next port, so a port taken while binding is handled. The harness has no probe of its own, no fixed port per suite and no kill logic. The new Node regression test holds 5173 for the whole startup and starts two harnesses at once. It then checks that they get different ports, that both serve the fixture, that closing one leaves the other working, and that the original holder of 5173 still answers (only checked when the test opened that holder itself). The developer reports this test as red at 96818bf and green afterwards. Both browser reports now record started_at and the real origin: 5174 for status and 5173 for cleanup. The status window, 17:34:46.196 to 17:34:51.936, falls inside the cleanup window, 17:34:46.195 to 17:35:02.028. That gives the stated 5.740 s overlap, with 14 status cases, 6 cleanup flows and 6 detected negative controls. The diff contains no product, TS or dependency changes. The Mission 11 text is changed only into past tense plus an addendum, and it does not claim retroactively that a parallel acceptance took place. The Node warning about the interrupted dependency scan is disclosed openly. One limit on the evidence: the overlap is measured between process starts, not between server binding times. Status probably fell back to 5174 because the Node test was still holding 5173, so the reports don't show a browser-vs-browser collision directly. That's enough for the criterion and isn't a defect. I didn't run anything myself. All test results come from the developer.",
+    "unverified": [
+      "All test runs (red at 96818bf, green Node test, both parallel browser runs) were run by the developer. I only checked them against the submitted reports and code.",
+      "The original red report in .office-desk-data/dreamteam/mission-12-red.json wasn't submitted. Only its transcription, reproduction.json, is available.",
+      "Vite's isPortAvailable/tryBindServer internals and ViteDevServer.close were only partly submitted. A double close of servers[0] in the finally block of the Node test is presumably harmless; the reported pass supports this, but I didn't check it against Vite's code.",
+      "The merged report parallel-checks.json measures overlap from the processes' started_at, not from server binding times. Whether the status fallback was caused by the Node test's own placeholder on 5173 or by the cleanup harness can't be told from the reports.",
+      "Typecheck/build evidence is carried over from Mission 11 and wasn't checked again. No Linux, Windows or default-Chromium run is claimed."
+    ]
+  },
+  "test_evidence_kind": "developer-reported, not executed by this bridge"
+}
