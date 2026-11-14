@@ -1,0 +1,135 @@
+{
+  "review_id": "044f53a69d2c4f23a5abf64babdb08a8",
+  "submission_sha256": "d88688ca8884a069688f8412a7688cdd125499f1464a33e87267aad9284da24d",
+  "provider": {
+    "kind": "claude",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "review": {
+    "criteria_results": [
+      {
+        "criterion_id": "C1",
+        "evidence": "Abschnitt 2 trennt den belegten Ausgangspunkt von M6 und M650 von der Zielverantwortung: Office führt Oberfläche und Projektmanagement, M650 liefert Messung und Transport. Abschnitt 8 beschreibt den kleinsten Weg (Python-Mac-Backend bleibt, schmaler Office-Serveradapter auf /v1/desk, /v1/health?days=7, /v1/source-status). Neue Office-APIs sind ausdrücklich als „Entwürfe“ markiert. Abschnitt 1 grenzt verbindliche Vorgaben vom Konzeptvorschlag ab. Abschnitt 10 hält die Betriebsumstellung zurück. Die Adapter-Wartezeit (M7-008) ist ein offener Vertragspunkt, aber kein Bruch des Zielbilds.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C2",
+        "evidence": "Die Vorschau erfüllt die inhaltlichen Pflichten. hostCard() zeigt Name als Link #vps/{id}, IP sowie CPU/RAM/Storage mit Meter. fleetCard() ist ein einzelner Link #fleet/{id} mit Name, Broker, Kurve, Konto-Balance/-Equity, Profit heute, Unrealized PnL und Status Active/Inaktive/Failure. Die Breakpoints 1000 und 700 px sind im CSS gesetzt, Fokusrahmen und Touchziele von 44 px vorhanden. render(true) setzt den Fokus nach einem Hashwechsel. Klickwege, Enter und Overflow hat der Entwickler laut Angabe bei 1440, 390 und 320 px geprüft. Offen bleibt M7-001: Das aria-label verdeckt Status und Werte für Screenreader.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C3",
+        "evidence": "vpsDetail() enthält CPU-, RAM- und Festplattenverlauf, eine Prozess-/Collector-Tabelle mit PID, Start, Bindung, CPU-Anteil und Speicher sowie die Flotten des Hosts. fleetDetail() enthält große Equity-Curve, vier Kennzahlen, VPS-Rücklink, Status- und Frischechips sowie die Register Varianten, Risiko, Journal und Betrieb & Daten. Die Register sind ausdrücklich als Konzeptanschluss ohne Originaldaten gekennzeichnet. Abschnitt 4 legt eindeutige Routen und Scopes fest. Die fehlende Quellendefinition der RAM-/Storage-Verläufe ist als M7-003 unter C4 erfasst.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C4",
+        "evidence": "Stark: Konto- und Flottenwerte sind getrennt, „Konto gesamt · geteilt“ ist vorgesehen, es gibt keine Summen und keine FX-Umrechnung. Profit heute ist als ΔB definiert (Rechenbeispiel stimmt: 300 + 0 − 100 = 200). Unrealized ist als open_unbooked mit gleichem Watermark definiert und deckt sich mit fleet_pnl(). Die Statusableitung ist nicht aus Prozessanwesenheit geraten. Offen: Für RAM-/Storage-Verläufe fehlt die Quelle (M7-003). Mehrere Health-Sessions je Slot sind nicht behandelt, das „letzte Fenster“ ist daher nicht chronologisch bestimmt (M7-004). Die 600-s-Schwelle wird ohne fresh_seconds und Abrufkadenz auf EA-Daten übertragen (M7-005). Die RAM-Warnung der Vorschau ist nicht durch die M650-Attention-Regel belegt (M7-006).",
+        "passed": false
+      },
+      {
+        "criterion_id": "C5",
+        "evidence": "Vorhanden und belegt: Fünf-Minuten-Abruf (mac_desk refresh_seconds 300), STALE-/Offline-Verhalten, Autorisierung ohne Schlüssel im Browser, eigener Office-Backendzugang, Demo-Kennzeichnung, historische Reviewgrenzen (Abschnitt 11). Der Testnachweis betrifft ehrlich nur die Vorschau, ohne axe-Lauf und ohne Betriebsabnahme. Nicht erfüllt: Die Sieben-Tage-Semantik für Health ist falsch bzw. unvollständig. Health wird per add nach Beobachtungs-Slot gelöscht und zusätzlich über health.max_bytes gekürzt, eine Sieben-Tage-Abdeckung ist nicht garantiert (M7-002). Außerdem zeigen die Flottenrouten im EA-losen Vorschauzustand weiter fiktive Flotten, und der Test bestätigt das (M7-007).",
+        "passed": false
+      }
+    ],
+    "decision": "CHANGES_REQUESTED",
+    "findings": [
+      {
+        "file": "design/fleet-control-unified/desk.js",
+        "id": "M7-001",
+        "impact": "Gerade der Failure-/Veraltet-Status ist für Hilfstechnik nicht erfassbar. Das widerspricht der Konzeptzusage „Status enthält immer Text“ und dem Ziel eines nachvollziehbaren Tastatur-/Bedienwegs. Wird das Muster in die Office-Implementierung übernommen, ist der Fehler produktiv.",
+        "location": "fleetCard(): <a class=\"fleet\" ... aria-label=\"${f.name} · Flottendetails öffnen\">",
+        "problem": "Die ganze Flottenkarte ist ein Link mit aria-label. Das aria-label ersetzt den zugänglichen Namen und bei gängigen Screenreadern (NVDA/VoiceOver Linkliste und Browse-Modus) auch die Ausgabe des Inhalts. Status (z. B. „Zuletzt Failure“, „Daten veraltet“), Broker, Balance, Equity, Profit heute und Unrealized PnL werden beim Fokus auf den Link nicht vorgelesen.",
+        "recommendation": "aria-label entfernen. Den zugänglichen Namen aus dem sichtbaren Inhalt bilden und den Zusatz „Flottendetails öffnen“ als visuell verborgenen Text im Link ergänzen. Alternativ aria-labelledby auf Name und Statuschip setzen und aria-describedby auf den Kennzahlenblock. Das Muster im Konzept (Abschnitt 3, Responsive und Interaktion) als Vorgabe festhalten.",
+        "severity": "P2",
+        "verification": "Im Accessibility-Tree (Playwright getByRole('link') bzw. accessibility snapshot) prüfen, dass Name oder Beschreibung des Nova- und Orion-Links Status und Datenfrische enthalten. Optional mit VoiceOver die Linkliste kontrollieren."
+      },
+      {
+        "file": "docs/FleetControlGemeinsamesKonzept.md",
+        "id": "M7-002",
+        "impact": "Die VPS-Detailverläufe könnten einen Sieben-Tage-Zeitraum suggerieren, den die Quelle nicht garantiert. Das betrifft die geforderte „tatsächliche Retentionssemantik“ (C5) direkt.",
+        "location": "Abschnitt 9, Zeile „Aufbewahrung“; Abschnitt 5 Equity-Curve; VPS-Detail in Abschnitt 4",
+        "problem": "Das Konzept beschreibt eine einheitliche Retention: tägliche Bereinigung, sieben bis acht Tage ab Annahme. Health-Fenster verhalten sich laut health.py anders. Sie werden bei jedem add() nach Beobachtungs-Slot (slot − retention_days·86400) gelöscht. Zusätzlich werden bei Überschreitung von health.max_bytes je add die 100 ältesten Fenster entfernt. Weil page_count ohne VACUUM nicht sinkt (VACUUM nur etwa täglich), bleibt die Bedingung nach einer Überschreitung bestehen. Die Health-Historie kann dann bis zur nächsten Kompaktierung weitgehend leerlaufen. Die VPS-Detailverläufe dürfen deshalb keine sieben Tage zusichern.",
+        "recommendation": "Abschnitt 9 nach Datenart trennen. Health: rollierend sieben Tage nach Beobachtungs-Slot, zusätzlich durch health.max_bytes begrenzt (älteste zuerst), daher keine garantierte Sieben-Tage-Abdeckung. Handels-Originale: wie dokumentiert ab Annahme. Die VPS-Detailcharts müssen immer den tatsächlich vorhandenen Anfang und das Ende zeigen. Das vermutete Dauerkürzen nach Budgetüberschreitung als eigenen M650-Befund im Bug Board erfassen; keine Reparatur in dieser Mission.",
+        "severity": "P2",
+        "verification": "Konzepttext gegen health.py Store.add/read abgleichen. Für den M650-Befund einen gezielten Test mit kleinem max_bytes ausführen und die Anzahl der Fenster nach mehreren add() ohne VACUUM beobachten."
+      },
+      {
+        "file": "docs/FleetControlGemeinsamesKonzept.md",
+        "id": "M7-003",
+        "impact": "Bei der Implementierung kann ram_min/volume_min mit dem Endstand vermischt werden. Ein Verlauf zeigt dann eine andere Größe als die Karte, ohne dass dies erkennbar ist.",
+        "location": "Abschnitt 7, Tabelle Zeilen RAM/Storage; Abschnitt 4 VPS-Detail",
+        "problem": "Das Mapping definiert für RAM und Storage nur den aktuellen Wert aus dem letzten Sample. Für die geforderten Verläufe im VPS-Detail ist keine Quelle festgelegt. Je Fenster liegen nur ram_min (minimale Reserve, also Spitzenverbrauch), volume_min (minimal freier Platz) und ein Punkt-Sample last vor. Die Vorschau beschriftet den RAM-Verlauf als „Beobachteter Verbrauch“, ohne festzulegen, ob Spitze oder Endstand gezeigt wird.",
+        "recommendation": "Je Fenster festlegen: RAM-Verlauf aus total_ram − last.available_ram (Endstand) und optional Spitze aus total_ram − ram_min, jeweils beschriftet. Storage analog mit size − last.free bzw. size − volume_min je Volume. Die Bindung von total_ram/size an das jeweilige Sample nennen.",
+        "severity": "P3",
+        "verification": "Mapping-Tabelle um eine Zeile je Verlauf ergänzen. Vorschau-Beschriftung („Endstand je Fenster“ bzw. „Spitze je Fenster“) entsprechend angleichen."
+      },
+      {
+        "file": "docs/FleetControlGemeinsamesKonzept.md",
+        "id": "M7-004",
+        "impact": "Nach einem Collector-Neustart können Karte und Verlauf einen älteren Stand oder eine geteilte Messabdeckung (z. B. 8/20 statt 20/20) zeigen.",
+        "location": "Abschnitt 7, Zeile CPU („letztes verfügbares Fünf-Minuten-Fenster“)",
+        "problem": "Health-Fenster haben den Schlüssel (host, session, slot), und session ist bei jedem Collector-Start eine zufällige UUID. Nach einem Neustart innerhalb eines Slots entstehen zwei Fenster für denselben Slot. read() sortiert nach slot,session, also innerhalb eines Slots nicht chronologisch. „Letztes Fenster“ bzw. rows[-1].last kann das ältere Session-Fenster sein. Zudem entstehen doppelte Kurvenpunkte je Slot. Das Konzept behandelt diesen Fall nicht.",
+        "recommendation": "Im Adapter-Vertrag festlegen: je Slot die Session mit dem jüngsten last.observed_at verwenden oder Fenster desselben Slots mit getrennter Abdeckung ausweisen. Die aktuelle Kachel immer nach maximalem last.observed_at bestimmen, nicht nach Zeilenreihenfolge.",
+        "severity": "P3",
+        "verification": "Späterer Adapter-Test mit zwei Sessions im selben Slot. Erwartung: aktuelle Kachel zeigt das jüngste Sample, und der Verlauf hat keinen doppelten Punkt."
+      },
+      {
+        "file": "docs/FleetControlGemeinsamesKonzept.md",
+        "id": "M7-005",
+        "impact": "Es drohen falsche „Daten veraltet“-Anzeigen im Normalbetrieb oder eine Schwelle, die von der vorhandenen Projektion abweicht.",
+        "location": "Abschnitt 6, Absatz Datenqualität („höchstens 600 Sekunden alt“)",
+        "problem": "Die 600-Sekunden-Schwelle stammt aus health.read() und gilt dort nur für Host-Health. Die Kontofrische in projection.py nutzt config['fresh_seconds']. Das Konzept wendet 600 s pauschal auch auf EA-/Flottendaten an. Es berücksichtigt nicht, dass Mac-Abruf (300 s) und EA-Exportintervall zusammen im Normalbetrieb nahe an oder über 600 s liegen können.",
+        "recommendation": "Health-Frische an die vorhandenen 600 s binden. EA-Frische an das konfigurierte fresh_seconds binden. Schwellen ausdrücklich gegen Exportintervall plus Abrufintervall (300 s) dimensionieren und im Konzept nennen.",
+        "severity": "P3",
+        "verification": "Konzeptabschnitt gegen projection.py (fresh_seconds) und health.py (600) abgleichen und den Rechenweg der Schwelle dokumentieren."
+      },
+      {
+        "file": "design/fleet-control-unified/desk.js",
+        "id": "M7-006",
+        "impact": "Das Designbeispiel suggeriert eine Warnlogik, die die Quelle nicht liefert. Ein Implementierer könnte eigene Prozent-Schwellen einführen und damit von der belegten M650-Semantik abweichen.",
+        "location": "hostCard(): badge('RAM-Reserve knapp','warn') für borealis",
+        "problem": "Die Vorschau zeigt für Borealis bei 0,7 GiB verfügbarem RAM „RAM-Reserve knapp“. Die vorhandene M650-Attention-Regel löst erst bei ram_min < 512 MiB und gleichzeitiger Auslagerungsaktivität über drei Fenster aus. Das Konzept-Mapping benennt keine Quelle für Ressourcenwarnungen, etwa health.attention.",
+        "recommendation": "Im Mapping festlegen, dass Ressourcenwarnungen aus /v1/health attention übernommen werden, mit Originaltext und -regel. Beispielwerte so wählen, dass sie diese Regel erfüllen, oder die Warnung als Beispiel einer M650-Attention-Meldung kennzeichnen.",
+        "severity": "P3",
+        "verification": "Beispieldaten und Badge-Text mit thresholds in health.read() vergleichen. Mapping-Tabelle um eine Zeile „Ressourcenwarnung“ ergänzen."
+      },
+      {
+        "file": "design/fleet-control-unified/desk.js",
+        "id": "M7-007",
+        "impact": "Die Vorschau widerspricht dem Konzeptgrundsatz „keine erfundenen Flotten“ für den EA-losen Zustand. Der Test prüft das Gegenteil des Zielverhaltens.",
+        "location": "render(): fleet-Routen ignorieren scenario==='waiting'; check-preview.cjs prüft #fleet/nova/risk nach selectOption('waiting')",
+        "problem": "Im Vorschauzustand „Ohne EA-Exporte“ blenden Übersicht und VPS-Detail die Flotten korrekt aus. Direkt-/Verlaufslinks auf #fleet/{id} und die Unterregister rendern aber weiterhin Nova/Vega/Orion mit Zahlen. Der Prüfablauf belegt das sogar, weil er nach dem Wechsel auf „waiting“ die Risiko-Seite erwartet. Der Zustand steht außerdem nicht im Hash, obwohl das Konzept Direktlinks mit Filtern vorsieht.",
+        "recommendation": "Bei scenario==='waiting' auf Flottenrouten einen Leer-/Nicht-gefunden-Zustand „Noch keine EA-Exportquelle für diesen Einsatz“ mit Rückweg rendern. Das Szenario in den Hash aufnehmen (z. B. #overview?state=waiting). Den Test entsprechend umstellen.",
+        "severity": "P3",
+        "verification": "check-preview.cjs: nach Wechsel auf „waiting“ #fleet/nova aufrufen und erwarten, dass kein .detail-metrics vorhanden ist und der Leerzustandstext erscheint. Reload behält das Szenario."
+      },
+      {
+        "file": "docs/FleetControlGemeinsamesKonzept.md",
+        "id": "M7-008",
+        "impact": "Gerade bei VPS-Ausfall kann Office zeitweise nichts anzeigen, obwohl das Mac-Backend einen gültigen letzten Stand hat. Der Zustand „Host offline: letzter Stand mit Originalzeiten“ (Abschnitt 9) wird dann verfehlt.",
+        "location": "Abschnitt 8, Absatz „Office-Adapter hat begrenzte Wartezeiten …“",
+        "problem": "MacBackend.snapshot() hält self.lock während des SSH-Abrufs (timeout=30). Im STALE-Zustand stößt es alle 30 s einen neuen Abruf an, auch aus einer Leseanfrage heraus. Office-Leseanfragen können deshalb bis etwa 30 s blockieren, obwohl ein letzter Stand im Speicher liegt. Das Konzept nennt keine Größenordnung für den Office-Timeout. Da Office keinen eigenen Stand speichert, führt ein kürzerer Timeout zu einer leeren Ansicht statt zum vorhandenen STALE-Stand.",
+        "recommendation": "Im Adaptervertrag festlegen: Office-Timeout größer als die Mac-Abrufgrenze (mehr als 30 s plus Puffer). Alternativ, als kleiner Eingriff im späteren Implementierungsauftrag, liefert das Mac-Backend den Cache ohne Warten auf einen laufenden Abruf. Office darf die letzte Adapterantwort nur flüchtig im Speicher halten, mit Originalzeiten und STALE-Kennzeichnung, ohne Persistenz.",
+        "severity": "P3",
+        "verification": "Späterer Adaptertest mit verzögertem Transport (Fake-Runner mit 25 s Verzögerung). Office zeigt den letzten Stand als STALE statt Fehler oder Leerseite."
+      }
+    ],
+    "resolved_findings": [],
+    "review_id": "044f53a69d2c4f23a5abf64babdb08a8",
+    "submission_sha256": "d88688ca8884a069688f8412a7688cdd125499f1464a33e87267aad9284da24d",
+    "summary": "Konzept 1.0 und statische Vorschau sind insgesamt schlüssig. Office führt Oberfläche und Projektmanagement, M650 liefert Messung und Transport. Der kleinste Integrationsweg (Office-Serveradapter auf die vorhandenen Mac-Loopback-Lesewege) ist klar beschrieben. Ist-Stand, Vorschlag und nicht umgesetzte Verbindung sind sauber getrennt. Verschachtelte VPS-/Flottenkarten, beide Klickwege, Stale- und EA-loser Zustand sowie Kennzahlsemantik (Profit heute vs. Tagesgesamtergebnis, keine Doppelzählung, keine FX-Umrechnung) sind fachlich sorgfältig ausgearbeitet. Es gibt keinen P0/P1-Befund.\n\nOffen sind zwei mittlere Befunde:\n- Die Kartenlinks überdecken per aria-label Status und Kennzahlen für Screenreader.\n- Die Sieben-Tage-Health-Historie ist ohne die tatsächliche Größenbudget-Kürzung und die abweichende Health-Retention beschrieben.\n\nDazu kommen mehrere kleinere Lücken:\n- Quellmapping für RAM-/Storage-Verläufe\n- Mehrfache Health-Fenster je Slot\n- Frischeschwelle\n- Unbelegte RAM-Warnung\n- Demo-Flotten im EA-losen Zustand\n- Adapter-Wartezeit gegen die Mac-Sperre\n\nIch habe keine Tests ausgeführt und keine Screenshots gesehen. Alle Testbelege stammen vom Entwickler. Dieses Review ist keine Gesamt- oder Betriebsabnahme.",
+    "unverified": [
+      "Entwicklertests (node --check, check-preview.cjs, checks.json, git diff --check) nicht selbst ausgeführt; Ergebnisse sind Entwicklerangaben.",
+      "PNG-Screenshots (Desktop, Mobil, VPS-Detail, Flottendetail) nicht als Bildinhalt erhalten; visuelle Darstellung nicht geprüft.",
+      "M650 server.py, windows_health.ps1 und vendor/read_api.Reader nicht im Paket; Mac-HTTP-Autorisierung, Unterstützung eines zusätzlichen Office-Backendschlüssels und Volumefeldnamen nicht geprüft.",
+      "Payload-Feldnamen balance/currency in account_snapshot nicht belegt (nur equity/positions in projection.py sichtbar).",
+      "Office FleetControl.tsx, FleetControlDeskKonzept.md, TradegazingOfficeDeskUX.md und die referenzierten M650-Reviewdokumente nicht im Paket; Existenz und Inhalt der 17 Dokumentverweise nicht geprüft.",
+      "Konfigurierter Wert von health.max_bytes und fresh_seconds unbekannt; tatsächliche Eintrittswahrscheinlichkeit von M7-002 und M7-005 daher offen.",
+      "Logo-Dateien unter TradegazingOfficeDesk/public/brand nicht im Paket."
+    ]
+  },
+  "test_evidence_kind": "developer-reported, not executed by this bridge"
+}

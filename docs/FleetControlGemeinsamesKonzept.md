@@ -4,6 +4,8 @@ Stand 14.11.2026 · Office-Mission 7 · Version 1.0 · Konzept zur Abstimmung
 
 [Klickbare Vorschau](../design/fleet-control-unified/index.html) · [Mission 7](http://127.0.0.1:43120/missions?mission=7)
 
+**Reviewstatus:** Dreamteam **CHANGES_REQUESTED**, C1/C2/C3 bestanden, C4/C5 offen. Das gemeinsame Zielbild und die Ansichten sind geliefert; Daten-/Health-Vertragsdetails sind noch zu präzisieren. Insbesondere die unten beschriebene Health-Aufbewahrung ist ohne deren zusätzliche Größenbudgetgrenze kein belastbarer Sieben-Tage-Abdeckungsnachweis. Acht nicht hohe Befunde sind als OFFICE-BUG-0022 bis -0029 zurückgestellt. Der [Prüfnachweis](FleetControlGemeinsamesReview.md) benennt ihre konkreten Auswirkungen und begrenzt den übernommenen Konzeptstand. Keine neue Gesamt- oder Betriebsabnahme.
+
 ## 1. Ein gemeinsamer Einstieg
 
 Matthias öffnet das **Tradegazing Office Desk**. Fleet Control zeigt zuerst die VPS und darin ihre Flotten. Damit stehen Handelsstand und die dafür verantwortliche Infrastruktur unmittelbar zusammen. Der gemeinsame Office-Rahmen aus Mission 6 bleibt die Oberfläche. Collector, geschützte Lesewege und VPS-Health aus Mission 650 liefern die technische Grundlage.
