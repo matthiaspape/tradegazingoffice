@@ -1,0 +1,64 @@
+{
+  "review_id": "2dc0a82d9fc740618236038ba53e919a",
+  "submission_sha256": "eef0bb71c29e0adfddf3fa83f28966b6576732cf6ace1886e07e5050b77ed355",
+  "provider": {
+    "kind": "claude",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "review": {
+    "criteria_results": [
+      {
+        "criterion_id": "C1",
+        "evidence": "In fleet-reader.mjs startet jeder nicht fehlgeschlagene Abruf einen Refresh, und bei vorhandenem Cache wartet waitBriefly bis REFRESH_WAIT_MS. Der erste Aufruf nach 20 Minuten liefert damit den neuen Stand (Test 'after twenty minutes…': CURRENT, calls===4). Ein langsamer Refresh meldet refreshing:true, und der Client holt nach 2 s nach statt erst nach 300 s. Es gibt keinen zusätzlichen vollen Browserzyklus mehr.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C2",
+        "evidence": "M9-001 ist behoben: Ohne Office-TTL kann ein zweiter Tab oder ein Sichtbarkeitsabruf keine Cachephase mehr verschieben. Die Mac-Pufferung begrenzt das Alter beim Lesen in jeder Phase auf unter 300 s. Der Test 'two clients with different poll phases…' prüft beide Clients über 10 Zyklen bis vor ihrem jeweils nächsten Poll (614 s ≤ 660 s). Das Warten ist auf 8 s begrenzt, und parallele Anfragen teilen entry.pending (Test 'parallel', calls===4). Der Client holt mit CATCHUP_DELAY_MS=2000 und CATCHUP_LIMIT=6 nach. Die Cleanup-Funktion löscht retry, poll, tick und den visibilitychange-Listener. Serverseitig entsteht ohne Anfragen kein Polling.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C3",
+        "evidence": "HEALTH_FRESH_SECONDS=660 setzt sich aus 300 Mac + 300 Browser + 15 + 45 zusammen, ACCOUNT_FRESH_SECONDS=960 aus 300 EA + 300 Mac + 300 Browser + 60. Nach dem Wegfall der Office-Frist entspricht das dem Code. Math.max(host.fresh_seconds, 960) erhält größere Werte (Test mit 1800). observedAt wird unverändert durchgereicht. failed, offline und Mac-STALE führen weiterhin zu STALE (Test 'a failed refresh never…'). setClock setzt nur die Anzeigeuhr, und es gibt keine Ableitung aus der Empfangszeit.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C4",
+        "evidence": "Vorhanden und aussagekräftig: Node-Tests für lange Pause, versetzte Polls, zwei phasenversetzte Clients (Regression zu M9-001), Blockade, Pending, Ausfall und Kontobudget. Dazu kommen Browserabläufe für das Nachholen nach 2 s, das Limit von 7 Requests und die Rückkehr der Sichtbarkeit nach 20 Minuten. Synthetische Uhr und API sind klar benannt, und eine native Langzeitmessung wird nicht behauptet. Typecheck und Build sind berichtet. Offen bleibt M9-002: Der Unmount-Ablauf prüft wegen page.goto die React-Cleanup-Funktion nicht und hängt an lokalen absoluten Pfaden. Die Grenze ist ehrlich dokumentiert, der Nachweis fehlt aber weiterhin.",
+        "passed": false
+      },
+      {
+        "criterion_id": "C5",
+        "evidence": "Der Diff betrifft nur fleet-reader.mjs (Fälligkeitsbedingung), fleet-timing.mjs (entfernte Konstante), einen Test und die Dokumentation. auth.mjs, die Route mit no-store und Sperre für Quellparameter, validateSources (Loopback, 0600) und mac_desk.py sind unverändert. Es gibt keine neuen Quellen oder Dienste. OFFICE-BUG-0030/0032/0033 bleiben ausdrücklich zurückgestellt, und M9-002 ist als OFFICE-BUG-0034 offen geführt statt als behoben erklärt. Die historische M8-Entscheidung bleibt bestehen.",
+        "passed": true
+      }
+    ],
+    "decision": "CHANGES_REQUESTED",
+    "findings": [
+      {
+        "file": "TradegazingOfficeDesk/tests/fleet-freshness-browser.cjs",
+        "id": "M9-002",
+        "impact": "Für das Teilkriterium Unmount in C2/C4 gibt es keinen Testnachweis, der einen fehlenden Cleanup erkennen würde, etwa bei clientseitigem Routing im DeskShell. Der Browserablauf lässt sich außerhalb dieses Macs nicht reproduzieren. Ein Laufzeitfehler ist nicht beobachtet. Die Cleanup-Funktion in FleetControl.tsx ist beim Lesen vollständig.",
+        "location": "Ablauf 'unmounted': await unmounted.goto(base+'/missions'); require('/Users/…/playwright') und executablePath '/Applications/Google Chrome.app/…'",
+        "problem": "Unverändert gegenüber Runde 1. Das Verlassen der Ansicht wird nur über eine vollständige Dokumentnavigation geprüft, die alle Timer ohnehin verwirft. Der Ablauf bestünde also auch ohne clearTimeout(retry), clearInterval oder removeEventListener in der useEffect-Cleanup-Funktion. Playwright- und Chrome-Pfad sind weiterhin absolute Benutzerpfade. Korrigiert wurde nur die Nachweisbeschreibung in FLEET_FRESHNESS.md und browser-checks.json. Die Rückstellung als OFFICE-BUG-0034 (NIEDRIG) ist dokumentiert.",
+        "recommendation": "Wenn die Rückstellung aufgehoben wird: Fleet Control über einen echten In-App-Wechsel verlassen, falls DeskShell clientseitig routet. Alternativ die Komponente in einer Testseite gezielt unmounten und danach mit clock.runFor prüfen, dass kein weiterer Overview-Request folgt. Playwright- und Chrome-Pfad über Umgebungsvariablen oder Paketauflösung konfigurierbar machen. Solange das nicht geschieht, bleibt der Befund als bekannte offene Nachweislücke bestehen.",
+        "severity": "P3",
+        "verification": "Den Ablauf einmal gegen eine absichtlich ohne clearTimeout(retry) gebaute Variante ausführen. Er muss dort fehlschlagen und mit der korrekten Cleanup-Funktion bestehen. Zusätzlich auf einer Umgebung ohne die festen Benutzerpfade starten."
+      }
+    ],
+    "resolved_findings": [
+      "M9-001"
+    ],
+    "review_id": "2dc0a82d9fc740618236038ba53e919a",
+    "submission_sha256": "eef0bb71c29e0adfddf3fa83f28966b6576732cf6ace1886e07e5050b77ed355",
+    "summary": "M9-001 ist behoben. In fleet-reader.mjs startet jeder erfolgreiche Office-Abruf einen Refresh, der laufende Anfragen zusammenfasst. Die zusätzliche 240-s-Office-Cachefrist entfällt, und OFFICE_REFRESH_MS ist entfernt. Das Datenalter beim Browser hängt damit nur noch an der vorhandenen Mac-Pufferung von höchstens 300 s (mac_desk.py snapshot) und am Collector-Alter. Das 660/960-s-Budget ohne Office-Posten stimmt jetzt mit dem Code überein. Der neue Regressionstest mit zwei Clients und 100 s Versatz hätte gegen den alten Code nachvollziehbar versagt: Client B hätte observedAt t0−315 s statt t+100−315 s erhalten. Die Aufrufzahl 40 = 10 Zyklen × 2 Clients × 2 Endpunkte ist konsistent. Die bestehenden Tests bleiben mit der neuen Fälligkeitslogik plausibel; das gilt für die Aufrufzahlen 4, 20 und 4 sowie für Ausfall, 30-s-Fehlerbackoff und Siebentagesablauf. Die zusätzliche Last am Mac ist gering, denn er bedient je Office-Abruf zwei Loopback-Requests aus seinem Cache. Ein neues SSH-Polling entsteht nicht. Autorisierung, Quellvalidierung, Mac/Windows und Messzeiten sind unverändert. Fehler- und STALE-Zustände bleiben veraltet. M9-002 ist inhaltlich nicht behoben. Der Bericht und browser-checks.json begrenzen die Aussage inzwischen korrekt auf eine vollständige Dokumentnavigation. Der Testablauf selbst ist aber unverändert: page.goto prüft nicht die React-Cleanup-Funktion, und die absoluten Playwright-/Chrome-Pfade bleiben fest eingetragen. Die Rückstellung als OFFICE-BUG-0034 ist eine legitime Priorisierung, schließt den Befund aber nicht. Er bleibt als P3 offen, und C4 ist deshalb nur für den Unmount-Nachweis nicht erfüllt. Ich habe keine Tests, keinen Typecheck und keinen Build selbst ausgeführt; alle Ergebnisse stammen vom Entwickler.",
+    "unverified": [
+      "Keinen der berichteten 17 Node-Tests, keinen der 4 Browserabläufe, weder Typecheck noch Produktionsbuild selbst ausgeführt; alle Ergebnisse stammen vom Entwickler.",
+      "Die Browserabläufe wurden nach der Readeränderung nicht erneut ausgeführt. Sie nutzen eine synthetische API und sind von der Readerlogik unabhängig; das ist nur aus dem Code abgeleitet.",
+      "Nicht im Paket: weitere Importe von OFFICE_REFRESH_MS, etwa in connect-fleet.mjs, ob DeskShell clientseitig routet, und die tsconfig. Für den Import der entfernten Konstante verlasse ich mich auf den berichteten Typecheck und Build.",
+      "Tatsächliche Latenz von Mac-SSH bzw. PowerShell und das reale Collector-Intervall nicht gemessen; das Budget von 15 s Messalter und 45 s Reserve ist aus Dokumentation und Code übernommen."
+    ]
+  },
+  "test_evidence_kind": "developer-reported, not executed by this bridge"
+}
