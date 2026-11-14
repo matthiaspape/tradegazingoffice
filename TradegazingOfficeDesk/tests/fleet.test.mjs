@@ -41,7 +41,7 @@ test('real EA-less and identity conflict preserve host card without fabricating 
 test('registered scope only, exact money, shared account label and unknown qualified trading values',()=>{
  const b=bundle();b.desk.accounts=[{account_key:binding.account_key,environment:'DEMO',deployment_id:'dep1',observed_at:at(-800),position_mode:'HEDGING',account:{balance:'9007199254740993.01',equity:'9007199254740993.02',currency:'EUR'},series:[{at:at(-800),value:'9007199254740993.02'}]}];
  const h={...host,bindings:[binding,{...binding,id:'vega'}]};
- const m=projectHost(h,b,now);assert.equal(m.fleets[0].balance,'9007199254740993.01');assert.equal(m.fleets[0].state,'CURRENT');assert.equal(m.fleets[0].freshSeconds,900);
+ const m=projectHost(h,b,now);assert.equal(m.fleets[0].balance,'9007199254740993.01');assert.equal(m.fleets[0].state,'CURRENT');assert.equal(m.fleets[0].freshSeconds,960);
  assert.equal(m.fleets[0].sharedAccount,true);assert.equal(m.fleets[0].status,'Unbekannt');assert.equal(m.fleets[0].profitToday,null);assert.equal(m.fleets[0].unrealized,null);
  b.desk.accounts[0].environment='LIVE';assert.equal(projectHost(h,b,now).fleets[0].balance,null);
  assert.equal(decimal(10),null);assert.equal(decimal('1e10'),null);
@@ -59,7 +59,7 @@ test('reader coalesces concurrent initial loads and keeps credentials out of its
 });
 test('cached response returns during blocked refresh and survives backend loss with original times',async()=>{
  let clock=now,fail=false,gate=null;
- const reader=createReader({clock:()=>clock,readToken:()=> 'fake-test-key-does-not-authorize-anywhere',fetcher:async url=>{if(gate)await gate;if(fail)throw new Error('test backend down');return Response.json(String(url).includes('health')?bundle().health:bundle().desk);}});
+ const reader=createReader({clock:()=>clock,refreshWaitMs:5,readToken:()=> 'fake-test-key-does-not-authorize-anywhere',fetcher:async url=>{if(gate)await gate;if(fail)throw new Error('test backend down');return Response.json(String(url).includes('health')?bundle().health:bundle().desk);}});
  await reader([host]);clock+=301000;
  let unblock;gate=new Promise(r=>{unblock=r;});
  const response=await reader([host]);assert.equal(response.hosts[0].observedAt,at(-10));unblock();gate=null;

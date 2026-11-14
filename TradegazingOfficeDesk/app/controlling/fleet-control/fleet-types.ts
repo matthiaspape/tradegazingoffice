@@ -16,4 +16,4 @@ export type Host = {
  processes:{pid:number|null;startedAt:string;terminal:string;binding:string;cpu:number|null;workingSet:number|null;privateBytes:number|null}[];
  fleets:Fleet[];
 };
-export type Overview = {mode:'NATIVE'|'DEMO';asOf:string;hosts:Host[]};
+export type Overview = {mode:'NATIVE'|'DEMO';asOf:string;hosts:Host[];refreshing?:boolean};

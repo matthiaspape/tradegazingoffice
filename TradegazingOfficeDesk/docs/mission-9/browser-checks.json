@@ -1,0 +1,12 @@
+{
+  "checked_at": "2026-11-14T12:04:03.657Z",
+  "synthetic_api": true,
+  "isolated_origin": "http://127.0.0.1:43121",
+  "checks": [
+    "Pending refresh becomes current after 2 seconds, without a five-minute delay",
+    "Still-pending refresh stops after six follow-ups",
+    "Leaving Fleet Control stops catch-up requests",
+    "Returning to the visible Desk immediately refreshes after a long pause"
+  ],
+  "page_errors": []
+}

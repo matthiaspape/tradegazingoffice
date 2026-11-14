@@ -3,6 +3,7 @@ import { resolve, isAbsolute } from 'node:path';
 import { deskHome } from './config.mjs';
 import { DeskError } from './contract.mjs';
 import { projectHost } from './fleet-model.mjs';
+import { OFFICE_REFRESH_MS, REFRESH_WAIT_MS } from './fleet-timing.mjs';
 
 const entries = new Map();
 export const sourceFile = () => resolve(deskHome(), 'fleet-sources.json');
@@ -47,7 +48,12 @@ export async function fetchJson(url, token, fetcher) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Invalid reader payload');
   return data;
 }
-export function createReader({fetcher=fetch, clock=Date.now, cache=new Map(), readToken=path=>{
+async function waitBriefly(pending, milliseconds) {
+  let timer;
+  try { await Promise.race([pending,new Promise(resolve=>{timer=setTimeout(resolve,milliseconds);})]); }
+  finally { clearTimeout(timer); }
+}
+export function createReader({fetcher=fetch, clock=Date.now, cache=new Map(), refreshWaitMs=REFRESH_WAIT_MS, readToken=path=>{
   const stat=lstatSync(path); if(!stat.isFile() || (stat.mode&0o077))throw new Error('Private token required');
   return readFileSync(path,'utf8').trim();
 }}={}) {
@@ -70,14 +76,19 @@ export function createReader({fetcher=fetch, clock=Date.now, cache=new Map(), re
       } catch { entry.failed=true; }
       finally { entry.pending=null; }
     }
-    if(!entry.pending && (entry.attempt===null || now-entry.attempt>=(entry.failed?30000:300000))) {
-      // A cached read never waits on the Python backend's SSH lock.
+    if(!entry.pending && (entry.attempt===null || now-entry.attempt>=(entry.failed?30000:OFFICE_REFRESH_MS))) {
       entry.pending=Promise.resolve().then(refresh);
     }
-    if(!entry.value && entry.pending)await entry.pending;
-    return projectHost(host,entry.value,clock(),{failed:entry.failed});
+    if(entry.pending) {
+      if(!entry.value)await entry.pending;
+      else await waitBriefly(entry.pending,refreshWaitMs);
+    }
+    return {host:projectHost(host,entry.value,clock(),{failed:entry.failed}),refreshing:entry.pending!==null};
   }
-  return async hosts=>({mode:'NATIVE',asOf:new Date(clock()).toISOString(),hosts:await Promise.all(hosts.map(read))});
+  return async hosts=>{
+    const results=await Promise.all(hosts.map(read));
+    return {mode:'NATIVE',asOf:new Date(clock()).toISOString(),hosts:results.map(r=>r.host),refreshing:results.some(r=>r.refreshing)};
+  };
 }
 const reader=createReader({cache:entries});
 export const fleetOverview = () => reader(loadSources());

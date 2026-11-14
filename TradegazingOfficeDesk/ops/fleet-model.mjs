@@ -1,4 +1,5 @@
 // M650 read-model adapter. Money is passed through as decimal strings, never calculated here.
+import { HEALTH_FRESH_SECONDS, ACCOUNT_FRESH_SECONDS } from './fleet-timing.mjs';
 export const items = value => Array.isArray(value) ? value : value && typeof value === 'object' ? [value] : [];
 const text = value => typeof value === 'string' ? value.slice(0, 500) : '';
 const numeric = value => value !== null && value !== '' && ['number','string'].includes(typeof value) && Number.isFinite(Number(value)) ? Number(value) : null;
@@ -38,7 +39,7 @@ export function healthModel(raw, now) {
   const pct = n => { const v = numeric(n); return v !== null && v >= 0 && v <= 100 ? v : null; };
   return {
     observedAt: sample.observed_at ?? null,
-    state: freshness(sample.observed_at, now, 600),
+    state: freshness(sample.observed_at, now, HEALTH_FRESH_SECONDS),
     cpu: pct(latest?.cpu_mean), cpuMax: pct(latest?.cpu_max), ram: ram(sample),
     volumes: items(sample.volumes).map(volume),
     samples: numeric(latest?.samples), cpuSamples: numeric(latest?.cpu_samples), expected: numeric(latest?.expected_samples),
@@ -54,14 +55,15 @@ function accountMatch(a, b) {
 export function fleetModel(binding, accounts, host, now, offline) {
   const matches = items(accounts).filter(a => accountMatch(a, binding));
   const a = matches.length === 1 ? matches[0] : null;
-  const state = freshness(a?.observed_at, now, host.fresh_seconds);
+  const freshSeconds = Math.max(host.fresh_seconds, ACCOUNT_FRESH_SECONDS);
+  const state = freshness(a?.observed_at, now, freshSeconds);
   const series = items(a?.series).filter(p => epoch(p.at) !== null && epoch(p.at) <= now && epoch(p.at) >= now - 7 * 86400000 && decimal(p.value) !== null)
     .map(p => ({at:p.at, value:p.value})).sort((a,b)=>epoch(a.at)-epoch(b.at));
   const payload = a?.account ?? {};
   return {
     id: `${host.id}.${binding.id}`, hostId: host.id, name: binding.name, broker: binding.broker,
     deploymentId: binding.deployment_id, environment: binding.environment, currency: text(payload.currency),
-    observedAt: a?.observed_at ?? null, freshSeconds: host.fresh_seconds, state: offline && state === 'CURRENT' ? 'STALE' : state,
+    observedAt: a?.observed_at ?? null, freshSeconds, state: offline && state === 'CURRENT' ? 'STALE' : state,
     sharedAccount: host.bindings.filter(b => b.account_key === binding.account_key && b.environment === binding.environment && (b.run_id ?? null) === (binding.run_id ?? null)).length > 1,
     balance: decimal(payload.balance), equity: decimal(payload.equity), series,
     // The current M650 projection does not qualify a day boundary or an overall EA operating state.

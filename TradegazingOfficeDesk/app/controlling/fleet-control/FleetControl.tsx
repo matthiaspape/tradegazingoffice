@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import DeskShell from '../../DeskShell';
 import { demoOverview } from './unified-demo';
 import type { Overview, Host, Fleet, Point } from './fleet-types';
+import { BROWSER_POLL_MS, CATCHUP_DELAY_MS, CATCHUP_LIMIT, HEALTH_FRESH_SECONDS } from '../../../ops/fleet-timing.mjs';
 import './unified.css';
 
 const base='/controlling/fleet-control';
@@ -38,16 +39,32 @@ export default function FleetControl({vpsId,fleetId}:{vpsId?:string;fleetId?:str
  const [mode,setMode]=useState<'NATIVE'|'DEMO'>('NATIVE'),[range,setRange]=useState(24),[data,setData]=useState<Overview|null>(null),[error,setError]=useState(''),[ready,setReady]=useState(false),[clock,setClock]=useState(Date.now());
  useEffect(()=>{
   const query=new URLSearchParams(location.search),demo=query.get('mode')==='demo';setMode(demo?'DEMO':'NATIVE');setRange(query.get('range')==='168'?168:24);
-  let alive=true;
+  let alive=true,sessionReady=false,inFlight=false;
+  let retry:ReturnType<typeof setTimeout>|undefined;
   if(demo){setData(demoOverview());setReady(true);return()=>{alive=false;};}
-  const refresh=async()=>{try{const r=await fetch('/api/fleet-control/overview',{cache:'no-store'});if(!r.ok)throw new Error('Fleet-Daten momentan nicht erreichbar.');const value=await r.json();if(alive){setData(value);setError('');setReady(true);}}catch{if(alive){setError('Fleet-Daten momentan nicht erreichbar. Letzte Werte behalten ihre Originalzeiten.');setReady(true);}}};
-  fetch('/api/local/session',{method:'POST',headers:{'content-type':'application/json','x-desk-session':'1'},body:'{}'}).then(r=>{if(!r.ok)throw new Error();return refresh();}).catch(()=>{if(alive){setError('Lokale Office-Sitzung konnte nicht geöffnet werden. Bitte die Seite neu laden.');setReady(true);}});
-  const poll=setInterval(refresh,300000),tick=setInterval(()=>{setClock(Date.now());setData(previous=>previous&&Date.now()-Date.parse(previous.asOf)>7*86400000?null:previous);},30000);
-  return()=>{alive=false;clearInterval(poll);clearInterval(tick);};
+  const refresh=async(attempt=0)=>{
+   if(!alive||!sessionReady||inFlight)return;
+   clearTimeout(retry);inFlight=true;
+   try{
+    const r=await fetch('/api/fleet-control/overview',{cache:'no-store'});
+    if(!r.ok)throw new Error('Fleet-Daten momentan nicht erreichbar.');
+    const value:Overview=await r.json();
+    if(alive){
+     setData(value);setClock(Date.now());setError('');setReady(true);
+     if(value.refreshing===true&&attempt<CATCHUP_LIMIT)retry=setTimeout(()=>refresh(attempt+1),CATCHUP_DELAY_MS);
+    }
+   }catch{if(alive){setError('Fleet-Daten momentan nicht erreichbar. Letzte Werte behalten ihre Originalzeiten.');setReady(true);}}
+   finally{inFlight=false;}
+  };
+  fetch('/api/local/session',{method:'POST',headers:{'content-type':'application/json','x-desk-session':'1'},body:'{}'}).then(r=>{if(!r.ok)throw new Error();sessionReady=true;return refresh();}).catch(()=>{if(alive){setError('Lokale Office-Sitzung konnte nicht geöffnet werden. Bitte die Seite neu laden.');setReady(true);}});
+  const resume=()=>{if(!document.hidden)void refresh();};
+  document.addEventListener('visibilitychange',resume);
+  const poll=setInterval(refresh,BROWSER_POLL_MS),tick=setInterval(()=>{setClock(Date.now());setData(previous=>previous&&Date.now()-Date.parse(previous.asOf)>7*86400000?null:previous);},30000);
+  return()=>{alive=false;clearTimeout(retry);clearInterval(poll);clearInterval(tick);document.removeEventListener('visibilitychange',resume);};
  },[]);
  const now=mode==='DEMO'&&data?Date.parse(data.asOf):clock;
  const link=(path:string)=>`${path}?mode=${mode==='DEMO'?'demo':'native'}&range=${range}`;
- const fresh=(at:string|null,state:string,limit=600)=>!error&&state==='CURRENT'&&(mode==='DEMO'||!!at&&(now-Date.parse(at)>=0&&now-Date.parse(at)<=limit*1000));
+ const fresh=(at:string|null,state:string,limit=HEALTH_FRESH_SECONDS)=>!error&&state==='CURRENT'&&(mode==='DEMO'||!!at&&(now-Date.parse(at)>=0&&now-Date.parse(at)<=limit*1000));
  const fleetCard=(f:Fleet)=><a key={f.id} className="fc-fleet" href={link(`${base}/${encodeURIComponent(f.id)}`)}><div className="fc-fleet-head"><div><h3>{f.name} <span aria-hidden="true">↗</span></h3><p>{f.broker} · {f.environment}</p></div><div className="fc-badges"><Chip>{f.status}</Chip><Chip tone={fresh(f.observedAt,f.state,f.freshSeconds)?'good':'warn'}>{fresh(f.observedAt,f.state,f.freshSeconds)?'Daten aktuell':'Daten fehlen / veraltet'}</Chip></div></div>{f.sharedAccount&&<p className="fc-muted">Konto gesamt · geteilt · keine Flottensumme</p>}<FleetValues fleet={f} current={fresh(f.observedAt,f.state,f.freshSeconds)}/><Plot points={f.series} label={f.sharedAccount?'Konto-Equity · geteilt':'Konto-Equity'} currency={f.currency} now={now} range={range}/><p className="fc-muted">Beobachtet {stamp(f.observedAt)} · Flottendetails öffnen →</p></a>;
  const hostCard=(h:Host)=><section className="fc-vps" key={h.id}><header className="fc-vps-head"><div><h2><a href={link(`/controlling/vps/${encodeURIComponent(h.id)}`)}>{h.name} →</a></h2><p className="fc-ip">IP {h.ip||'nicht hinterlegt'}</p></div><Chip tone={fresh(h.observedAt,h.state)?'good':'warn'}>{fresh(h.observedAt,h.state)?'Health aktuell':'Health fehlt / veraltet'}</Chip></header><HostValues host={h} current={fresh(h.observedAt,h.state)}/>{h.issue&&<p className="fc-notice">{h.issue}</p>}{h.attention.map((a,i)=><p className="fc-notice" key={i}>{a}</p>)}{h.fleets.length?<div className="fc-fleet-grid">{h.fleets.map(fleetCard)}</div>:<p className="fc-empty">{h.waitingForEa?'Noch keine EA-Exportquellen angebunden. VPS-Health läuft unabhängig.':'Keine gebundenen Flotteneinsätze.'}{h.unboundAccounts>0?` ${h.unboundAccounts} Konten warten auf Flottenzuordnung.`:''}</p>}</section>;
  const host=data?.hosts.find(h=>h.id===vpsId),fleet=data?.hosts.flatMap(h=>h.fleets).find(f=>f.id===fleetId);
