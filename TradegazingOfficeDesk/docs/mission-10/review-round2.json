@@ -1,0 +1,52 @@
+{
+  "review_id": "6948ae0f9ac64f0aad03153f3ed74255",
+  "submission_sha256": "139b0c0456ce2ce2e15034e5aa8b65c1f6e392307091ccf4fcd5a38d4d2030ef",
+  "provider": {
+    "kind": "claude",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "review": {
+    "criteria_results": [
+      {
+        "criterion_id": "C1",
+        "evidence": "main.tsx schaltet die unveränderte FleetControl per useState im selben Dokument; geprüft wird das über fleetCleanupDocument===document. Vor dem Unmount stehen die Ressourcen auf {retry:1,poll:1,tick:1,visibility:1}, danach auf emptyResources. Der Basiswert stimmt: Bei pausierter Uhr kann der Retry auch nach 2,1 s Echtzeit nicht feuern. Nach runFor(601000) und einem visibilitychange-Ereignis bleibt der synchrone Browserzähler overviewRequests bei 1, ebenso calls. Ein Remount legt genau einen Ressourcensatz an. lateResponseCase wartet auf fleetOverviewProcessed und prüft retryCreated unverändert, einmal direkt danach und einmal nach runFor(10000). Zusätzlich prüft er leere Ressourcen und overviewRequests===1. Mutation 5 (ohne if(alive)) und Mutation 6 (ohne alive-Guard, Listener behalten) belegen die Wirksamkeit.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C2",
+        "evidence": "Der pre-Transform in fleet-browser-harness.mjs verlangt weiterhin genau einen Cleanup-Anker. Er entfernt nur im Speicher je eine der vier Cleanup-Operationen. Diese vier Mutanten laufen gegen dieselbe cleanupCase. Der Validator verlangt ERR_ASSERTION, die Meldung /^React cleanup leaked tracked resources/ und error.actual exakt {...emptyResources,[mutation]:1}. Andere Fehler werden durchgereicht, und wasMutated() muss true sein. Dateien werden nicht geschrieben. Die beiden zusätzlichen Mutationen haben eigene eindeutige Anker und eigene exakte Assertionen, schwächen die vier Cleanup-Kontrollen also nicht ab.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C3",
+        "evidence": "browser-runtime.cjs ist unverändert: require('playwright'), dazu die devDependency 1.62.1. Standardmäßig startet Playwright sein Chromium, optional wird FLEET_BROWSER_CHANNEL oder FLEET_BROWSER_EXECUTABLE verwendet. Sind beide gesetzt, wird ein Error geworfen. Der Test enthält keine festen Benutzer- oder Mac-Pfade. Vite läuft auf 127.0.0.1 mit Port 0. Sitzung und Overview werden synthetisch per page.route bedient, Datenbank und Auth sind nicht nötig.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C4",
+        "evidence": "FLEET_CLEANUP_TEST.md, README, AGENTS.md und ArchitekturDraft trennen synthetische API und Uhr von der echten React-Komponente. Sie beschreiben die kumulativen Zähler, die pausierte Uhr und die sechs Negativkontrollen passend zum Code; das Protokoll browser-checks.json passt dazu. Belegt sind ein Lauf mit FLEET_BROWSER_CHANNEL=chrome und Playwright 1.62.1 sowie der Typecheck. Dieser ist für die unveränderten TS-Dateien aus Runde 1 übernommen und wird nicht als neuer Lauf ausgegeben. Weder Linux, Windows noch Default-Chromium wird behauptet. Alle Fälle schließen die Seite in finally, ebenso den Mutanten-Server, Harness und Browser. Runde 1 wird als CHANGES_REQUESTED zitiert. Historische M8- und M9-Entscheidungen bleiben erhalten, eine Gesamtfreigabe wird nicht behauptet.",
+        "passed": true
+      }
+    ],
+    "decision": "APPROVED",
+    "findings": [],
+    "resolved_findings": [
+      "M10-001",
+      "M10-002",
+      "M10-003"
+    ],
+    "review_id": "6948ae0f9ac64f0aad03153f3ed74255",
+    "submission_sha256": "139b0c0456ce2ce2e15034e5aa8b65c1f6e392307091ccf4fcd5a38d4d2030ef",
+    "summary": "Alle drei Befunde aus Runde 1 sind im Testcode behoben. Neue Defekte habe ich nicht gefunden.\n\n**M10-001:** trackResources zählt jede Anlage eines 2000-ms-Timeouts kumulativ über retryCreated++. Die Zahl geht nicht verloren, wenn der Timer später feuert und aus dem Set entfernt wird. lateResponseCase hält den Basiswert direkt nach dem Unmount fest. Geprüft wird er unmittelbar nach der tatsächlichen JSON-Verarbeitung und erneut nach runFor(10000).\n- Die Reihenfolge ist belastbar. Im json-Wrapper stellen responseProcessed() und return die Reaktion der Evaluate-Seite (M1) und die Fortsetzung der Komponente (M2) in derselben Microtask in die Warteschlange. Das zusätzliche await Promise.resolve() läuft deshalb nach der Fortsetzung der Komponente. Ein fälschlich geplanter Retry ist also vor der Assertion gezählt.\n- Die fünfte Mutation entfernt den eindeutigen Anker 'if(alive){\\n     setData'. Der catch-Zweig hat ein anderes Format und ist nicht betroffen. Der Validator verlangt Meldung, actual=1 und expected=0.\n\n**M10-002:** Die Uhr wird zwei Stunden vor der Zielzeit installiert und nach dem Laden der ungemounteten Seite mit pauseAt(time) angehalten. Danach schreitet sie nur über runFor bzw. setSystemTime fort. Der echte Echtzeit-Wait von 2,1 s vor dem Unmount steht in cleanupCase. Dieselbe Funktion läuft im Basisfall und in allen vier Cleanup-Mutanten, deckt also genau die geforderte Verifikation ab.\n\n**M10-003:** overviewRequests++ steht im fetch-Wrapper vor dem ersten await. refresh ruft fetch synchron vor seinem ersten await auf. Deshalb zählt der Browser jeden Abruf schon synchron während dispatchEvent bzw. runFor, ohne Wettlauf mit IPC oder dem Routehandler.\n- Die sechste Mutation entfernt !alive aus dem refresh-Guard und behält den Listener. Sie scheitert exakt an actual=2 und expected=1.\n- Sie läuft in einem eigenen Fall (requestAfterUnmountCase) mit derselben Zählerassertion. Grund: In cleanupCase würde diese Mutation bereits an der Ressourcenassertion scheitern. Das ist nachvollziehbar und ausreichend.\n\n**Unverändert erfüllt:** die vier Cleanup-Mutationen (C2), die Playwright-Auflösung und Browserwahl (C3) und das Schließen per finally.\n\n**Dokumentation:** README, AGENTS, ArchitekturDraft und FLEET_CLEANUP_TEST nennen die Zählung von sechs Abläufen und sechs Negativkontrollen. Diese Zahl stimmt mit dem Code überein. Runde 1 wird mit ihrer Entscheidung CHANGES_REQUESTED korrekt zitiert. Eine Gesamtfreigabe wird nicht behauptet, die historischen M8- und M9-Entscheidungen bleiben erhalten.\n\n**Grenzen:** Ich habe nichts ausgeführt; alle Testbelege stammen vom Entwickler. Diese Freigabe gilt nur für den gezielten Testnachweis zu OFFICE-BUG-0034. Sie autorisiert weder Merge noch Deployment.",
+    "unverified": [
+      "Keinen Browserlauf, keinen Typecheck und kein npm ci selbst ausgeführt. Das gemeldete Ergebnis (6 Checks, 6 Negativkontrollen, 0 Seitenfehler, Kanal chrome) stammt vom Entwickler.",
+      "Der Typecheck wurde laut Entwickler nicht neu ausgeführt; er gilt aus Runde 1 weiter. Das ist plausibel: Geändert sind nur .cjs-/.mjs-Dateien und Dokumentation, und tsconfig schließt .mjs/.cjs nicht ein. Selbst geprüft habe ich das nicht.",
+      "Die Microtask-Reihenfolge zwischen fleetOverviewProcessed und der Fortsetzung der Komponente ist nur aus der Promise-Semantik abgeleitet. Gestützt wird sie zusätzlich durch die gemeldete exakte Erkennung der fünften Mutation; selbst beobachtet habe ich sie nicht.",
+      "Dass pauseAt nach install zuverlässig anhält und React-Rendering bei pausierter Uhr funktioniert, beruht auf der Playwright-Dokumentation und dem gemeldeten Lauf.",
+      "Nicht nachgewiesen, dass work/ per .gitignore ausgeschlossen ist. Ebenfalls nicht geprüft: ob es Playwright 1.62.1 in der Registry gibt und ob die Integrity-Hashes in der Lockdatei stimmen.",
+      "Kein Lauf mit dem Standard-Chromium und keiner auf Linux oder Windows; beides wird in der Dokumentation auch nicht behauptet."
+    ]
+  },
+  "test_evidence_kind": "developer-reported, not executed by this bridge"
+}
