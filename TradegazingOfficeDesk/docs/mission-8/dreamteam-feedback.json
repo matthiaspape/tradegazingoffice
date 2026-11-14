@@ -1,0 +1,84 @@
+{
+  "review_id": "7406b8df53174c009439e2060a97972a",
+  "submission_sha256": "9dbcbd8e2293c3ebd43936ee2151edef35055fa4fe06f77e59d65f29f891b5d8",
+  "provider": {
+    "kind": "claude",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "review": {
+    "criteria_results": [
+      {
+        "criterion_id": "C1",
+        "evidence": "DeskShell, BrandIdentity, DeskNav und Projektmanagement-Navigation sind unverändert. Für Fleet zeigt die Topbar je nach fleetMode „Lesende VPS-Anbindung“ oder „Fiktive Beispieldaten“.\n\nhostCard zeigt Namenslink, IP, CPU, RAM und Volumes mit Frischechip. Darunter liegen die fleetCards mit Name, Broker/Umgebung, Status, Datenfrische, Balance, Equity, Profit heute, Unrealized, Equity-Kurve und Beobachtungszeit.\n\nDie Demo kommt nur über ?mode=demo (unified-demo.ts: „never a fallback“). Native Ansichten ohne EA zeigen Leerzustände. Browsertest: native .fc-fleet count 0, Demo mit 2 VPS und 3 Flotten.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C2",
+        "evidence": "VPS-Namenslink führt nach /controlling/vps/{id}, die ganze Karte als <a> nach /controlling/fleet-control/{host}.{binding}.\n\nDas VPS-Detail zeigt CPU-, RAM- und je Volume einen Plot mit Lücken sowie eine Prozesstabelle. Das Flottendetail zeigt die fc-large-Kurve und die Register Varianten, Pools, Positionen sowie Betrieb & Daten.\n\nEin nativer Direktlink /nova ergibt einen Leerzustand ohne .fc-values. Der Kartenname enthält Inhalt und Status, ohne aria-label; der Test prüft /Orion.*Zuletzt Failure/. Die Fokusführung per Enter und die Überlaufprüfung bei 1440/390/320 sind entwicklerbelegt.\n\nOffen ist M8-003: In den Details fehlt der explizite Frische- und Verbindungsstatus.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C3",
+        "evidence": "Die Overview-Route ruft authorize() auf (Grenze, Bearer oder Cookie) und antwortet bei jeder Query mit 400. validateSources erzwingt http://127.0.0.1 mit Port, ohne Credentials, Pfad oder Query. fetchJson setzt redirect:'error', einen 45-s-Timeout und eine Stream-Grenze von 16 MiB.\n\nconnect-fleet legt einen eigenen Geräteeintrag „tradegazing-office-server“ an und reaktiviert widerrufene Einträge nicht. Der Schlüssel liegt mit 0600 in deskHome, die Tests prüfen, dass weder Token noch token_file im Modell landen.\n\nDer Cache liefert ohne Warten auf pending (Test „cached response returns during blocked refresh“). Es gibt nur den flüchtigen Map-Cache mit 7-Tage-Ablauf und keine neue Datenbank. Kleinerer Fehlerzustandsbefund: M8-002.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C4",
+        "evidence": "Erfüllt:\n- accountMatch prüft account_key, environment, run_id und deployment_id.\n- decimal() übernimmt Geldwerte nur als Strings, und es gibt keine Summen. sharedAccount wird gekennzeichnet.\n- profitToday, unrealized und status bleiben null bzw. „Unbekannt“.\n- healthModel wählt je Slot das jüngste last.observed_at. RAM und Volume nutzen den eigenen Sample-Nenner. Attention wird aus dem Original übernommen. Lücken werden als Segmente dargestellt, die Historie ist auf 7 Tage begrenzt.\n\nNicht erfüllt ist die „passende Frische“ (M8-001). Durch Stale-while-revalidate, den Mac-Cache und den 300-s-Poll ist das Datenalter im Normalbetrieb regelmäßig größer als die Health-Schwelle von 600 s. Nach jeder Pause zeigt der erste Aufruf deshalb einen veralteten Stand.",
+        "passed": false
+      },
+      {
+        "criterion_id": "C5",
+        "evidence": "Belege des Entwicklers:\n- 11 neue Adaptertests (Sessions, Geldwerte, Identität, Registry-Negativfälle, Auth 401/403/400, Redirect/Größe, Blockade, Ablauf, Hostausfall, Connector/Widerruf).\n- Typecheck und Build.\n- Browserlauf gegen die isolierte Instanz 43121 mit leerer PM-Datenbank. browser-checks.json liegt im Paket.\n\nDie Dokumentation nennt:\n- den nicht neu gestarteten Prozess 43120\n- keine EA-, MT5- oder Windows-Aktion\n- die Grenzen der übernommenen M650-Abnahmen\n- OFFICE-BUG-0030 als NIEDRIG; der Demo-Kurvenversatz ist im Code nachvollziehbar (sin(12)·35)\n\nAlles ist entwicklerberichtet und nicht unabhängig ausgeführt.",
+        "passed": true
+      }
+    ],
+    "decision": "CHANGES_REQUESTED",
+    "findings": [
+      {
+        "file": "TradegazingOfficeDesk/ops/fleet-reader.mjs",
+        "id": "M8-001",
+        "impact": "Im Normalbetrieb zeigt die Haupt-Hostkarte einen großen Teil der Zeit „Health fehlt / veraltet“. CPU-, RAM- und Storage-Werte erscheinen als „—“ oder „Zuletzt …“, obwohl VPS und Mac fehlerfrei laufen. Nach jedem Öffnen der Seite dauert das bis zum nächsten Poll fünf Minuten an. Echte Ausfälle sind damit nicht mehr von der Cache-Latenz zu unterscheiden. Die Anforderung „passende Frische“ (C4, historisch M7-005) ist im Laufzeitverhalten nicht erfüllt. Die Browsertests decken das nicht ab, weil sie nur Erstabrufe mit leerem Cache prüfen.",
+        "location": "createReader().read(): Refresh-Bedingung now-entry.attempt>=300000 und Rückgabe von entry.value ohne Warten; zusammen mit FleetControl.tsx setInterval(refresh,300000) sowie fleet-model.mjs healthModel freshness(...,600) und dem Fünf-Minuten-Cache in mac_desk.py",
+        "problem": "Ist ein Speicherstand vorhanden, löst eine Anfrage zwar den Refresh aus, liefert aber immer das Ergebnis des vorherigen Abrufs. Das Datenalter bei der Anzeige setzt sich dann zusammen:\n- bis zu 300 s Office-Cache\n- plus bis zu 300 s Mac-Cache (Hintergrundabruf alle 300 s)\n- plus etwa 15 s Collector-Intervall\n- plus bis zu weitere 300 s, bis der Browser erneut pollt; die Client-Uhr läuft in dieser Zeit weiter\n\nZusätzlich kann der Browser-Poll knapp unter der Schwelle von 300000 ms ankommen. Dann fällt der Refresh für einen weiteren Zyklus aus. Nach einer Pause von mehr als 10 Minuten bekommt der erste Seitenaufruf immer den alten Office-Stand. Health ist nach 600 s veraltet, die Konto-Frische (900 s) hat dasselbe Kettenproblem.",
+        "recommendation": "Latenz der Kette reduzieren, ohne die Nicht-Blockier-Garantie aufzugeben:\n1. Ist ein Refresh fällig, wartet die Anfrage höchstens kurz (z. B. 5–8 s) auf den laufenden Abruf und liefert erst danach den Cache. Alternativ liefert die Antwort `refreshing:true`, und der Client fragt nach wenigen Sekunden einmal nach.\n2. Die Server-Refresh-Schwelle unter das Browser-Pollintervall legen (z. B. 240 s), oder kürzer pollen (z. B. 60 s), damit kein Zyklus durch die Taktung ausfällt.\n3. Die Health- und Konto-Frischeschwellen ausdrücklich gegen Collector + Mac-Abruf + Office-Cache + Poll dimensionieren und das in FLEET_INTEGRATION.md nennen. Die Messzeit nicht umschreiben; die Kennzeichnung muss ehrlich bleiben.",
+        "severity": "P2",
+        "verification": "Fake-Clock-Test in tests/fleet.test.mjs:\n1. Cache bei t0 befüllen, Mac-Bundle mit last.observed_at=t0−250 s. Bei t0+20 min anfragen: Heute ist state STALE. Nach der Korrektur zeigt die Antwort (oder die eine Nachfrage) CURRENT mit einem frischen Bundle.\n2. Steady-State-Simulation mit Mac-Alter 300 s und 300-s-Poll über mehrere Zyklen: Bei funktionierender Quelle muss der Host durchgehend CURRENT bleiben.\n3. Bei blockiertem Transport kommt der letzte Stand weiterhin innerhalb der kurzen Wartegrenze."
+      },
+      {
+        "file": "TradegazingOfficeDesk/app/controlling/fleet-control/FleetControl.tsx",
+        "id": "M8-002",
+        "impact": "Ein länger offenes Desk-Fenster zeigt nach 12 Stunden einen scheinbaren Quellenausfall, obwohl nur die lokale Sitzung abgelaufen ist. Das verfälscht den Fehlerzustand (C3) und die Statusaussage.",
+        "location": "useEffect: refresh() und einmaliges fetch('/api/local/session') beim Mount",
+        "problem": "Die Sitzungs-Cookie läuft nach 43200 s ab (ops/auth.mjs). Der Client öffnet die Sitzung nur beim Mount. Danach beantwortet die API jeden Poll mit 401. Angezeigt wird dauerhaft die allgemeine Meldung „Fleet-Daten momentan nicht erreichbar …“, und alle Werte gelten als nicht aktuell. Der Client versucht keine erneute Anmeldung und nennt die Ursache nicht.",
+        "recommendation": "Bei 401 im refresh() einmalig POST /api/local/session ausführen und den Abruf wiederholen. Scheitert das, eine eigene Meldung „Sitzung abgelaufen – Seite neu laden“ statt des Quellenfehlers zeigen.",
+        "severity": "P3",
+        "verification": "Browser- oder Unit-Test mit abgelaufener bzw. entfernter Cookie: Der nächste Poll baut die Sitzung neu auf, zeigt wieder Daten und keinen Quellenfehler. Ohne erfolgreichen Neuaufbau erscheint der Sitzungstext."
+      },
+      {
+        "file": "TradegazingOfficeDesk/app/controlling/fleet-control/FleetControl.tsx",
+        "id": "M8-003",
+        "impact": "Auf den Detailseiten ist für sehende Nutzer und für Hilfstechnik nicht nachvollziehbar, warum Werte fehlen (C2 „zugängliche Statusinhalte“).",
+        "location": "Host-Detailzweig (host?<>…) und Flotten-Detailzweig (fleet?<>…): Badges/Kopf",
+        "problem": "Die Karten zeigen den Chip „Health aktuell / fehlt / veraltet“ bzw. „Daten aktuell / fehlen / veraltet“. Beide Detailseiten haben keinen Frische- oder Verbindungsstatus. Ist der Stand veraltet, ohne dass der Transport ausgefallen ist, erscheinen nur Striche und „Zuletzt …“ ohne Begründung. host.issue wird nur bei transport.failed gesetzt, und host.connection (CURRENT/STALE/UNAVAILABLE) wird nirgends angezeigt.",
+        "recommendation": "Die Karten-Chips für Frische und Datenquelle im Kopf beider Detailseiten wiederverwenden. Zusätzlich den Verbindungszustand host.connection als Text ausgeben, z. B. „Verbindung: veraltet, letzter Backendabruf …“.",
+        "severity": "P3",
+        "verification": "Browsercheck: Auf der VPS- und der Flotten-Detailseite ist in Native und Demo ein Statuschip mit Frischetext vorhanden. Bei Orion (Demo, STALE) lautet der Text „Daten fehlen / veraltet“."
+      }
+    ],
+    "resolved_findings": [],
+    "review_id": "7406b8df53174c009439e2060a97972a",
+    "submission_sha256": "9dbcbd8e2293c3ebd43936ee2151edef35055fa4fe06f77e59d65f29f891b5d8",
+    "summary": "Die Office-Implementierung ist sauber geschnitten. DeskShell, Navigation und Projektmanagement aus M6 bleiben erhalten. Die Overview-API autorisiert serverseitig und lehnt Quellparameter ab. Ziele kommen ausschließlich aus einer privaten Loopback-Registrierung. Es gibt einen eigenen, widerrufbaren Leserschlüssel, keine Schlüssel im DTO und 16-MiB-/45-s-Grenzen. Der Cache liefert den letzten Stand sofort, ohne auf den Refresh zu warten. Geldwerte bleiben Dezimalstrings. Health-Sessions werden nach jüngster Beobachtung gewählt, die Endstände nutzen den Nenner ihres eigenen Samples, und Messlücken bleiben sichtbar. Native Tagesnetto-, Offenbewertung und EA-Status bleiben ehrlich unbekannt. Die Demo wird nur über ?mode=demo gewählt und nie als Fallback verwendet.\n\nEin mittlerer fachlicher Befund ist offen. Die Datenkette hat mehrere Caches hintereinander: Office liefert den Cache aus und aktualisiert erst danach (stale-while-revalidate), dazu kommen der Fünf-Minuten-Cache des Mac-Backends und der Fünf-Minuten-Poll des Browsers. Zusammen ergeben sie im Normalbetrieb ein Datenalter von regelmäßig über 600 s. Nach jeder Pause von mehr als etwa 10 Minuten zeigt die Hostkarte deshalb „Health fehlt / veraltet“ und Strichwerte – mindestens bis zum nächsten Poll fünf Minuten später.\n\nKleinere Befunde:\n- Eine abgelaufene Office-Sitzung (12 h) wird nicht neu aufgebaut.\n- Den Detailseiten fehlt ein expliziter Frische- und Verbindungsstatus.\n\nIch habe keine Tests ausgeführt. Alle Belege stammen vom Entwickler. Dieses Review autorisiert weder Übernahme noch Neustart oder Deployment.",
+    "unverified": [
+      "Entwicklertests (45 Node-Tests, Typecheck, Build, tests/fleet-browser.cjs) nicht selbst ausgeführt; Ergebnisse sind Entwicklerangaben.",
+      "Tatsächliche native Anbindung (151 Healthfenster, eigener Leserzugang, QA auf 43121, kein Neustart von 43120) nur entwicklerberichtet; Screenshots nicht erhalten.",
+      "Nicht im Paket: ops/contract.mjs, ops/setup.mjs, ops/launch.mjs, die Root-Route '/' und .gitignore. Daher nicht geprüft, ob .office-desk-data (Schlüssel, Registrierung, privater Screenshot) sicher von Git ausgeschlossen ist und wie die QA-Instanz trotz fest eingestelltem Port 43120 in package.json/vite.config auf 43121 lief.",
+      "Payload-Feldnamen in M650 (account.balance/currency, pool/used.risk/capacity.risk, variant timeframe_minutes/ready) nicht belegt; die Detailanzeige kann bei abweichendem Schema leere Felder zeigen.",
+      "Größe der 7-Tage-Healthantwort gegenüber der 16-MiB-Grenze bei voller Historie (ca. 2016+ Fenster inkl. Prozesslisten) nicht belegt.",
+      "Konsistenz von /v1/desk und /v1/health aus zwei getrennten Mac-snapshot()-Aufrufen bei gleichzeitigem Refresh nicht geprüft."
+    ]
+  },
+  "test_evidence_kind": "developer-reported, not executed by this bridge"
+}
