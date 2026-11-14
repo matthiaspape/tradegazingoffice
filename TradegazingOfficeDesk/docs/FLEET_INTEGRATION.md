@@ -21,7 +21,9 @@ Die vorhandene Macquelle auf `127.0.0.1:8766` wurde für die lokale lesende Ansc
 
 Ein isoliertes Office auf Port 43121 mit eigener leerer Projektmanagement-Datenbank liest dieselbe Quelle. Der Browsercheck bestätigt native Hostdaten, den EA-losen Zustand und funktionierende VPS-Details. Es gibt derzeit weiterhin keine gebundenen aktuellen EA-Exportquellen. Die native Übersicht erfindet deshalb keine Flotten oder Handelssalden.
 
-Der reguläre Office-Prozess auf 43120 wurde in dieser Implementierungsphase nicht neu gestartet. Die Übernahme des neuen Builds in den laufenden Office-Betrieb ist eine eigene operative Aktion. Die separate Python-Oberfläche und der vorhandene App-Einstieg auf 8766 wurden nicht entfernt oder umgestellt.
+Nach der ausdrücklichen Freigabe **„Jetzt im Office aktivieren“** wurde der reguläre Office-Prozess auf 43120 am 14.11.2026 mit dem geprüften Build gestartet. Der vorhandene Mac-App-Einstieg `~/Applications/Tradegazing Office Desk.app` öffnet jetzt den gemeinsamen Office Desk auf 43120. Das vorhandene Python-Macbackend auf 8766 und die VPS-Dienste bleiben als Mess-/Transportgrundlage erhalten.
+
+Der erste reguläre authentisierte Office-Datenabruf lieferte HTTP 200, Modus NATIVE, einen gebundenen Host mit CURRENT-Health und weiterhin null Flotten bei fehlenden EA-Exporten. Die operative Quittung liegt privat unter `.office-desk-data/dreamteam/mission-8-activation.json`. Erfolgreiche Quittungen und vorhandene Testbelege übernommen; keine zusätzliche Rücklese-/Installations- oder Gesamtqualifikationsserie. Die eigene QA-Instanz auf 43121 wurde beendet und ihre leere temporäre Datenablage entfernt. Reguläre Projektmanagement-Daten und laufende Messdienste bleiben erhalten.
 
 ## Daten, Rechte und Grenzen
 

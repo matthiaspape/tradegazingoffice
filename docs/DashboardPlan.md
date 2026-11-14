@@ -1,5 +1,7 @@
 # Privates Office-Dashboard: Web-/App-Varianten und MT5-Monitoring
 
+**Aktueller Monitoringstand 14.11.2026:** Der gemeinsame Office Desk aus Mission 8 ist auf `http://127.0.0.1:43120` aktiviert; die vorhandene Mac-App öffnet diesen Einstieg. Office zeigt native VPS-Health über die vorhandene M650-Python-Schicht. Aktuelle EA-Exporte und qualifizierte native Flotten-Handelswerte fehlen weiterhin. [Implementierung, Betrieb und tatsächliche Reviewgrenzen](../TradegazingOfficeDesk/docs/FLEET_INTEGRATION.md). Die nachfolgenden Hosting-/Buchhaltungsvarianten bleiben historische Ausbauentwürfe.
+
 | Stand | 03.10.2026 |
 | --- | --- |
 | Status | Spätere Ausbaustufe; Anforderungen aufgenommen, technische Umsetzung als Entwurf |

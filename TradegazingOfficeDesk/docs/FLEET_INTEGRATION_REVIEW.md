@@ -25,4 +25,8 @@ Entscheidung **CHANGES_REQUESTED · 4 von 5 Kriterien bestanden**, kein hoher Be
 
 Alle Befunde sind vor einer möglichen Reparatur im Office-Bug-Board erfasst, Status `ZURUECKGESTELLT`. Die vorhandene OFFICE-BUG-0007 betrifft die andere lokale Sitzungs-Vertrauensgrenze und wurde nicht als Duplikat des neuen Ablaufhinweises behandelt. Kein neuer hoher konkreter Implementierungs-/Autorisierungsblocker. Nach der Nutzerpriorisierung folgen keine zusätzlichen Reparatur-/Reviewrunden für diese mittleren/niedrigen Punkte. Historische M7-/M650-Befunde bleiben an ihrem tatsächlichen Kontext erhalten.
 
-Die Implementierung ist mit diesen Grenzen übergabefähig. Die reguläre lokale Übernahme und etwaige App-Einstiegsänderung bleiben eine gesondert zu autorisierende Betriebsaktion. Ergebnisdokumentation, Core, Commit/Push und Cleanup erhalten keine erneute Gesamtqualifikation.
+## Autorisierte operative Übernahme nach dem Review
+
+Der Nutzer gab anschließend ausdrücklich **„Jetzt im Office aktivieren“** frei. Der reguläre Office-Prozess auf 43120 wurde mit dem geprüften Build gestartet; die bestehende Mac-App öffnet jetzt diesen gemeinsamen Desk. Der erste echte Office-Datenabruf lieferte HTTP 200, NATIVE, einen Host mit CURRENT-Health und weiterhin keine erfundenen Flotten. Die eigene QA-Instanz und ihre leeren Daten wurden bereinigt. Python-Macbackend und Windows-Dienste blieben erhalten.
+
+Die erfolgreiche Betriebsquittung wird übernommen. Das ist keine neue unabhängige Abnahme und ändert CHANGES_REQUESTED oder die offenen mittleren/niedrigen Befunde nicht. Bugkontexte werden mit KONTEXT_BEENDET abgeschlossen, Befunde bleiben ZURUECKGESTELLT. Ergebnisdokumentation, Core, Commit/Push und Cleanup erhalten keine erneute Gesamtqualifikation.
