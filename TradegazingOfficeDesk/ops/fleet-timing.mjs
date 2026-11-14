@@ -1,6 +1,5 @@
 // Display budgets for the existing 5-minute measurement/pull chain; never rewrite source times.
 export const BROWSER_POLL_MS = 300000;
-export const OFFICE_REFRESH_MS = 240000;
 export const REFRESH_WAIT_MS = 8000;
 export const CATCHUP_DELAY_MS = 2000;
 export const CATCHUP_LIMIT = 6;

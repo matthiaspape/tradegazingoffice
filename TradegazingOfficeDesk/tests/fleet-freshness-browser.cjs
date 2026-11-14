@@ -35,7 +35,7 @@ function sample(count,{refreshing,current}){
   await unmounted.goto(base);await unmounted.getByRole('link',{name:'Healthprobe 1 →',exact:true}).waitFor();
   await unmounted.goto(base+'/missions');await unmounted.getByRole('button',{name:'+ Neue Mission',exact:true}).waitFor();
   await unmounted.clock.runFor(10000);assert.equal(extra,1,'Leaving Fleet Control cancels the scheduled follow-up');
-  checks.push('Leaving Fleet Control stops catch-up requests');await unmounted.close();
+  checks.push('Full document navigation stops catch-up; React cleanup is not isolated');await unmounted.close();
 
   const resumed=await page();let wakeups=0;
   await resumed.route(endpoint,async route=>{

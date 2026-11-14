@@ -5,7 +5,7 @@
   "checks": [
     "Pending refresh becomes current after 2 seconds, without a five-minute delay",
     "Still-pending refresh stops after six follow-ups",
-    "Leaving Fleet Control stops catch-up requests",
+    "Full document navigation stops catch-up; React cleanup is not isolated",
     "Returning to the visible Desk immediately refreshes after a long pause"
   ],
   "page_errors": []

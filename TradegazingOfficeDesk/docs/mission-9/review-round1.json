@@ -1,0 +1,72 @@
+{
+  "review_id": "8e9b7de4594441d9897e79ab3dbc070d",
+  "submission_sha256": "8ed3bfc784f270dc0b1cfa7897e0130cda46aae3af40169b1fffddef029354a4",
+  "provider": {
+    "kind": "claude",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "review": {
+    "criteria_results": [
+      {
+        "criterion_id": "C1",
+        "evidence": "fleet-reader.mjs: Bei vorhandenem Cache gilt `else await waitBriefly(entry.pending,refreshWaitMs)`, und OFFICE_REFRESH_MS ist 240000 < BROWSER_POLL_MS. Damit liefert ein fälliger erster Abruf nach der Pause direkt den neuen Stand. Der Test 'after twenty minutes the first request returns the completed fresh refresh' prüft CURRENT und calls===4. Ein langsamer Refresh wird über `refreshing` gemeldet und nach 2 s nachgeholt statt erst nach einem vollen Browserzyklus.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C2",
+        "evidence": "Erfüllt: Das Warten ist auf REFRESH_WAIT_MS=8000 begrenzt. Parallele Anfragen nutzen dasselbe entry.pending (Test 'parallel' mit calls===4). Der Client holt mit CATCHUP_DELAY_MS=2000 und CATCHUP_LIMIT=6 nach, und die Cleanup-Funktion beendet retry, Intervalle und den Listener. Offen ist M9-001: Ein Sichtbarkeitsabruf oder mehrere Tabs verschieben die Phase des globalen 240-s-Office-Caches, wodurch ein späterer Intervallabruf einen Refreshzyklus überspringt. Der Unmount-Beleg ist nicht aussagekräftig (M9-002).",
+        "passed": false
+      },
+      {
+        "criterion_id": "C3",
+        "evidence": "fleet-timing.mjs/FLEET_FRESHNESS.md begründen 660 s und 960 s aus Mac-Cache, Browserintervall, Collector bzw. EA-Export und Reserve. `Math.max(host.fresh_seconds, ACCOUNT_FRESH_SECONDS)` erhält größere Werte (Test mit 1800). observedAt wird unverändert durchgereicht. offline/failed/STALE der Verbindung ergibt weiterhin STALE (Test 'a failed refresh never makes the old measurement fresh'). setClock setzt nur die Anzeigeuhr. Das in M9-001 fehlende Office-Cachealter ist ein Scheduling-Fehler (C2), keine Fälschung von Messzeiten.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C4",
+        "evidence": "Vorhanden sind Node-Tests für die lange Pause, zehn versetzte Polls, Blockade bzw. Pending, Ausfall und das Kontobudget, dazu Browserabläufe für Nachholen, Limit 7 Requests und Sichtbarkeitsrückkehr. Die synthetische Uhr bzw. API ist benannt, und docs bzw. browser-checks.json behaupten keine native Langzeitmessung. Der Unmount-Ablauf nutzt jedoch page.goto und prüft die Cleanup-Funktion nicht (M9-002). Ein Test für phasenversetzte Clients bzw. Sichtbarkeitsabruf zwischen Intervallen fehlt (M9-001). Typecheck und Build sind nur berichtet.",
+        "passed": false
+      },
+      {
+        "criterion_id": "C5",
+        "evidence": "Die Änderungen beschränken sich auf FleetControl.tsx, fleet-reader.mjs, fleet-model.mjs, die neue Konstantendatei fleet-timing.mjs, Tests und Docs. authorize, checkBoundary, validateSources (Loopback, Token-Datei 0600) und die Route sind unverändert. Der Client importiert nur Konstanten ohne Geheimnisse. mac_desk.py ist unverändert, und es kommen keine neuen Quellen oder Dienste hinzu. FLEET_FRESHNESS.md und FLEET_INTEGRATION.md führen OFFICE-BUG-0030/0032/0033 ausdrücklich als zurückgestellt; die historische M8-Entscheidung bleibt bestehen.",
+        "passed": true
+      }
+    ],
+    "decision": "CHANGES_REQUESTED",
+    "findings": [
+      {
+        "file": "TradegazingOfficeDesk/app/controlling/fleet-control/FleetControl.tsx",
+        "id": "M9-001",
+        "impact": "Bei funktionierender Quelle zeigt eine Ansicht zeitweise „Health fehlt / veraltet“ bzw. „Daten fehlen / veraltet“. Das ist genau die Fehlerklasse von OFFICE-BUG-0031, und C2 (kein verpasster Refreshzyklus) ist damit nicht erfüllt.",
+        "location": "useEffect: resume/visibilitychange + setInterval(refresh,BROWSER_POLL_MS); ops/fleet-reader.mjs read(): OFFICE_REFRESH_MS-Fälligkeit",
+        "problem": "Der Office-Cache wird pro Host global nach 240 s fällig. Jeder Client pollt dagegen in seiner eigenen festen 300-s-Phase. Der neue Sichtbarkeitsabruf und weitere Tabs oder Ansichten (Übersicht und Detail getrennt geöffnet) können den Office-Refresh außerhalb dieser Phase auslösen. Kommt danach ein Intervallabruf weniger als 240 s später, liefert er unverändert den Cache und gilt als nicht fällig. Der nächste echte Refresh folgt dann erst einen Browserzyklus später. Das zusätzliche Alter (bis ca. 240 s bei zwei Tabs, bis ca. 60 s beim Sichtbarkeitsfall) fehlt in der Budgetrechnung (300 Mac + 300 Browser + 15 + 45 bzw. 960 für Konten). Beispiel mit zwei Tabs im Abstand von 100 s: Tab B erhält immer Office-Daten mit 100 s Alter. Daraus ergeben sich bis zu ca. 300+15+100+300 = 715 s > 660 s.",
+        "recommendation": "Das Office-Cachealter zuverlässig klein halten oder im Client neu ausrichten. Möglichkeit 1: OFFICE_REFRESH_MS deutlich senken (z. B. 30–60 s). Das erzeugt keine zusätzliche SSH-Last, weil der Mac-Backend-Cache selbst höchstens alle 300 s per SSH abruft. Die Grenze wird dann als eigener Posten ins Budget aufgenommen. Möglichkeit 2: Den Browserpoll als setTimeout-Kette ab der letzten Antwort neu planen, auch nach Sichtbarkeits- und Nachholabrufen. Dazu müsste der Server die Office-Abrufzeit (entry.at) liefern, damit der Client gezielt nachfragt. Danach einen Test mit zwei versetzten Clients bzw. Sichtbarkeitsabruf zwischen zwei Intervallen ergänzen, der über mehrere Zyklen CURRENT hält.",
+        "severity": "P2",
+        "verification": "Node-Test mit synthetischer Uhr: zwei Reader-Aufrufer mit 100 s Phasenversatz im 300-s-Takt und einer Quelle mit konstantem Alter 315 s. Prüfen, dass healthModel für beide Clients bis kurz vor ihrem nächsten Poll CURRENT bleibt. Dazu ein Browserablauf: Sichtbarkeitsabruf 250 s nach Mount, danach weitere Intervalle mit Health aktuell ohne Lücke."
+      },
+      {
+        "file": "TradegazingOfficeDesk/tests/fleet-freshness-browser.cjs",
+        "id": "M9-002",
+        "impact": "Der Beleg „Verlassen der Ansicht stoppt Nachholen“ (C2/C4) ist für eine clientseitige Navigation im DeskShell nicht aussagekräftig. Der Ablauf lässt sich außerhalb dieser einen Maschine nicht reproduzieren.",
+        "location": "Ablauf 'unmounted': await unmounted.goto(base+'/missions')",
+        "problem": "page.goto führt eine vollständige Dokumentnavigation aus. Dabei werden alle Timer des alten Dokuments ohnehin verworfen. Der Test prüft daher nicht die useEffect-Cleanup-Funktion (clearTimeout(retry), clearInterval, removeEventListener) und bestünde auch ohne sie. Außerdem sind der Playwright-Pfad und der Chrome-Pfad als absolute Benutzerpfade fest eingetragen.",
+        "recommendation": "Die Ansicht über einen echten In-App-Wechsel verlassen, z. B. per Klick auf den DeskShell-Navigationslink zu Missionen, falls dieser clientseitig routet. Alternativ die Komponente in einer Testseite gezielt unmounten. Danach mit clock.runFor sicherstellen, dass keine weiteren Overview-Requests folgen. Die Pfade zu Playwright und Chrome über Umgebungsvariablen oder Paketauflösung konfigurierbar machen.",
+        "severity": "P3",
+        "verification": "Den Test einmal gegen eine absichtlich ohne clearTimeout(retry) gebaute Variante ausführen. Er muss dann fehlschlagen und mit der korrekten Cleanup-Funktion bestehen."
+      }
+    ],
+    "resolved_findings": [],
+    "review_id": "8e9b7de4594441d9897e79ab3dbc070d",
+    "submission_sha256": "8ed3bfc784f270dc0b1cfa7897e0130cda46aae3af40169b1fffddef029354a4",
+    "summary": "Die gezielte Korrektur behebt den reproduzierten Kernfehler: Der Office-Refresh wird nach 240 s fällig, ein vorhandener Cache wartet höchstens 8 s, und ein noch laufender Abruf meldet `refreshing`. Der Client holt dann begrenzt nach und baut Timer und Listener beim Verlassen ab. Originalzeiten bleiben erhalten, Fehlerzustände werden weiter als STALE gezeigt, größere `fresh_seconds` bleiben bestehen, und der Umfang bleibt eng. Es gibt aber zwei offene Punkte. (1) Der Office-Cache selbst kann bis zu 240 s Alter beitragen, ohne im 660/960-s-Budget enthalten zu sein. Das passiert, wenn der neue Sichtbarkeitsabruf oder ein zweiter Tab bzw. eine zweite Ansicht den Office-Refresh außerhalb des eigenen Pollrasters auslöst. Der nächste Intervallabruf trifft dann einen „nicht fälligen“ Cache und überspringt einen Zyklus, sodass eine funktionierende Quelle zeitweise als veraltet erscheinen kann. (2) Der Browsertest „Verlassen stoppt Nachholen“ nutzt `page.goto`, also einen vollständigen Dokumentwechsel. Er prüft damit die React-Cleanup-Funktion nicht und würde auch ohne Cleanup bestehen. Alle Testbelege stammen vom Entwickler; ich habe nichts selbst ausgeführt.",
+    "unverified": [
+      "Keinen der berichteten Tests (16 Node-Tests, 4 Browserabläufe), Typecheck oder Produktionsbuild selbst ausgeführt; die Ergebnisse stammen vom Entwickler.",
+      "Die tatsächliche SSH-/PowerShell-Latenz des Mac-Backends und damit, wie oft das 8-s-Warten in der Praxis reicht, nicht gemessen.",
+      "Ob die DeskShell-Navigation clientseitig routet und Fleet Control damit im laufenden Dokument unmountet, ist nicht im Paket enthalten.",
+      "tsconfig/allowJs für den Import von ops/fleet-timing.mjs in die Client-Komponente nicht eingesehen."
+    ]
+  },
+  "test_evidence_kind": "developer-reported, not executed by this bridge"
+}

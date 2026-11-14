@@ -3,7 +3,7 @@ import { resolve, isAbsolute } from 'node:path';
 import { deskHome } from './config.mjs';
 import { DeskError } from './contract.mjs';
 import { projectHost } from './fleet-model.mjs';
-import { OFFICE_REFRESH_MS, REFRESH_WAIT_MS } from './fleet-timing.mjs';
+import { REFRESH_WAIT_MS } from './fleet-timing.mjs';
 
 const entries = new Map();
 export const sourceFile = () => resolve(deskHome(), 'fleet-sources.json');
@@ -76,7 +76,9 @@ export function createReader({fetcher=fetch, clock=Date.now, cache=new Map(), re
       } catch { entry.failed=true; }
       finally { entry.pending=null; }
     }
-    if(!entry.pending && (entry.attempt===null || now-entry.attempt>=(entry.failed?30000:OFFICE_REFRESH_MS))) {
+    // Successful reads have no Office TTL: the existing Mac backend already coalesces/caches its pulls.
+    // Keeping a second TTL here lets another tab shift the cache phase and miss this tab's next poll.
+    if(!entry.pending && (!entry.failed || entry.attempt===null || now-entry.attempt>=30000)) {
       entry.pending=Promise.resolve().then(refresh);
     }
     if(entry.pending) {

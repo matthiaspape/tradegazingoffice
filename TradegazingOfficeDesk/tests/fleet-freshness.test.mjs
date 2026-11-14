@@ -61,3 +61,17 @@ test('account budget covers the export chain while preserving larger configured 
  assert.equal(projectHost({...h,fresh_seconds:1800},b,start).fleets[0].freshSeconds,1800);
  assert.equal(f.observedAt,observedAt);
 });
+test('two clients with different poll phases stay current until each next poll',async()=>{
+ const f=fixture({age:315});
+ for(let cycle=0;cycle<10;cycle++){
+  const a=await f.reader([host]);
+  assert.equal(a.hosts[0].observedAt,new Date(f.time()-315000).toISOString());
+  assert.equal(healthModel(health(Date.parse(a.hosts[0].observedAt)),f.time()+299000).state,'CURRENT');
+  f.advance(100000);
+  const b=await f.reader([host]);
+  assert.equal(b.hosts[0].observedAt,new Date(f.time()-315000).toISOString());
+  assert.equal(healthModel(health(Date.parse(b.hosts[0].observedAt)),f.time()+299000).state,'CURRENT');
+  f.advance(200000);
+ }
+ assert.equal(f.calls(),40);
+});
