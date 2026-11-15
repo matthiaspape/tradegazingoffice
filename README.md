@@ -16,7 +16,7 @@ Office-Mission 11 behebt OFFICE-BUG-0030/0032/0033 im regulären Desk: Demokurve
 
 Office-Mission 12 behebt OFFICE-BUG-0035 am gemeinsamen Testserver (Dreamteam APPROVED 4/4): belegte Ports werden über Vites Bind-/Retry-Logik umgangen. Beide Browserläufe bestehen gleichzeitig mit 14 Statusfällen, sechs Cleanup-Abläufen und sechs Negativkontrollen; Produkt und regulärer Betrieb bleiben unverändert. [Parallelprüfung](TradegazingOfficeDesk/docs/mission-12/VALIDATION.md).
 
-Office-Mission 13 ergänzt den fehlenden Mac-Autostart für den gemeinsamen Desk. `./desk autostart` richtet einen eigenen Benutzer-LaunchAgent mit Wiederanlauf nach Prozessende ein; danach gewollten Stop/Start über `./desk stop`/`./desk launch` führen. Die vorhandenen VPS-Aufgaben sind nach dem tatsächlichen Systemneustart bereits automatisch gestartet. [Neustartbetrieb und Grenzen](TradegazingOfficeDesk/docs/operations/AUTOSTART.md).
+Office-Mission 13 hat den Mac-Autostart für den gemeinsamen Desk regulär eingerichtet (Dreamteam APPROVED 5/5). `./desk autostart` richtet einen eigenen Benutzer-LaunchAgent mit Wiederanlauf nach Prozessende ein; danach gewollten Stop/Start über `./desk stop`/`./desk launch` führen. Die vorhandenen VPS-Aufgaben sind nach dem tatsächlichen Systemneustart bereits automatisch gestartet. [Neustartbetrieb und Grenzen](TradegazingOfficeDesk/docs/operations/AUTOSTART.md).
 
 Beide Bereiche verwenden den gemeinsamen Rahmen mit originaler Tradegazing-CI, responsiver Navigation sowie Hell- und Dunkelmodus. Das [gemeinsame UI/UX-Konzept](docs/TradegazingOfficeDeskUX.md) beschreibt auch die späteren Ausbaustufen. Die [klickbare Designvorschau](design/tradegazing-office-desk/index.html) hält den früheren Entwurf fest.
 

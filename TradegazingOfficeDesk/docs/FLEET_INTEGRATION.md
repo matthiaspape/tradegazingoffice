@@ -4,6 +4,8 @@ Stand 14.11.2026 · Office-Mission 8 · Implementierung mit M6-/M650-Bausteinen
 
 **Historische M8-Bewertung:** Dreamteam CHANGES_REQUESTED, C1/C2/C3/C5 bestanden, C4 wegen der verzögerten Cache-/Frischekette offen. OFFICE-BUG-0031 ist auf ausdrücklichen Auftrag in Mission 9 gezielt behoben und regulär aktiviert; [Timingänderung und eigener Prüfumfang](FLEET_FRESHNESS.md). Dreamteam bestätigt die Fehlerkorrektur; die historische M9-Entscheidung bleibt CHANGES_REQUESTED 4/5 wegen des damaligen niedrigen Testnachweisbefunds 0034. Dieser ist inzwischen in Mission 10 mit echtem React-Unmount-Test und portabler Browserauflösung behoben: [gezielte Testabnahme APPROVED 4/4](FLEET_CLEANUP_TEST.md). Die niedrigen Befunde 0030/0032/0033 sind inzwischen in Mission 11 gezielt behoben und regulär aktiviert: [Dreamteam APPROVED 5/5, Tests und verbleibender Nebenbefund](mission-11/VALIDATION.md). [Ursprüngliche Paketbindung und Behandlung](FLEET_INTEGRATION_REVIEW.md). Die gezielte Nachbesserung ist keine neue Gesamtfreigabe der M8-Implementierung.
 
+Der Mac-Desk auf43120 besitzt seit Mission13 einen eigenen Benutzer-LaunchAgent für Anmeldung und Wiederanlauf, getrennt vom vorhandenen Datenbackend8766. [Neustartbetrieb und bestätigte VPS-Bootaufgaben](operations/AUTOSTART.md). Gewollten Stop/Start über `./desk stop`/`./desk launch` führen.
+
 ## Ergebnis und Verwendung
 
 Das Office Desk enthält die gemeinsame VPS-/Flottenübersicht. Es verwendet weiterhin den bestehenden DeskShell, Originalmarke, Navigation, Hell-/Dunkelmodus und die Projektmanagementfunktionen aus Mission 6. Der neue serverseitige Adapter liest die vorhandene M650-Python-Schicht. Die Windows-Collector-/Reader-Dienste und deren Speicher bleiben unverändert.

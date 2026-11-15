@@ -1,0 +1,57 @@
+{
+  "review_id": "39579cd07db74e24a2307b09ffd1733f",
+  "submission_sha256": "faf9453ae33a0f545869e49bcae057fde0377ab0d6aa4dac94ab256f66bd5411",
+  "provider": {
+    "kind": "claude",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "review": {
+    "criteria_results": [
+      {
+        "criterion_id": "C1",
+        "evidence": "VALIDATION.md und AUTOSTART.md: Office 43120 wurde per `./desk launch` wiederhergestellt; der authentisierte Overview lieferte 200/NATIVE/CURRENT. Agent 8766 ist geladen (nur als Textaussage belegt). vps-startup.json: Boot 2026-11-14T16:03:01.5Z; Collector und Reader liefen ab 16:03:03Z mit Boottrigger und Dienstkonto; task_or_rights_changes=false, kein MT5- oder Systemneustart. Der Diff ändert nichts an Windows oder M650.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C2",
+        "evidence": "launch-agent.mjs agentContext: eigenes Label `de.tradegazing.office-main-desk`, getrennt von `de.tradegazing.office-desk`. Start über Node plus vorhandenes vinext-`cli.js` mit `start -H 127.0.0.1 -p 43120`, RunAtLoad/KeepAlive true. EnvironmentVariables enthalten nur den Datenpfad, den Port und einen festen System-PATH, keine Secrets. `ProcessType` ist entfernt. autostart.mjs verlangt vorhandene Zugangsdaten und einen vorhandenen Build. Es gibt keine DB/Migration und keine Änderung an Readerrechten; die QA nutzt keine neue Readerregistrierung.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C3",
+        "evidence": "stop.mjs: Ein geladener eigener Agent wird per bootout plus waitForExit entladen; sonst gilt der Legacy-PID-Weg mit Prüfung von Befehl und Port. launch.mjs: Bei installiertem Agent startet `startAgent` denselben plist. Ohne Agent bleibt der Legacy-Spawn. Besitz und Herkunft prüfen agentInstalled (lstat/uid/Spec) und parseAgentJob (path). Neu: Ein belegter Port ohne eigenen Job führt zum Abbruch vor dem Bootstrap; nach dem Health-Check muss die Job-PID den Port besitzen. Ein fehlgeschlagener eigener Bootstrap wird entladen; fremde Prozesse werden nicht beendet. autostart.mjs prüft Besitz vor stop.mjs und den Port vor writeAgent.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C4",
+        "evidence": "launch-agent.test.mjs enthält 7 Tests: Spec inklusive PATH und ohne ProcessType, explicitlyDisabled, plutil-Sonderzeichen, fremde Konfiguration, Symlink/Besitzer, Jobherkunft, Legacy-Stop. Die native QA prüft Dummy-Ablehnung, Portbesitz, idempotenten Start, SIGTERM-Respawn mit neuer PID, Fleet NATIVE/CURRENT vor und nach dem Respawn, bootout und erneuten Bootstrap. Das Aufräumen in verschachtelten finally-Blöcken ist robust; danach wird geprüft, dass kein Job, kein plist und kein Override verbleibt. Der alte Override ist als OFFICE-BUG-0037 begrenzt dokumentiert. Die Grenzen (Start nach Anmeldung statt vor FileVault, kein vollständiger OS-Reboot) und die Trennung der Windows-Belege sind ehrlich benannt.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C5",
+        "evidence": "Der Diff betrifft nur launch-agent.mjs, autostart.mjs, Tests und Docs; Produkt-, Handels-, MT5-, Research- und Fleet-Reader-Code sind unverändert. Die AUTOSTART-Tabelle nennt die „reguläre Einrichtung nach Review“, und test_evidence sagt, dass die Installation erst nach dem Review erfolgt; sie wird also nicht vorab behauptet. Die Docs passen zum Code: sieben Tests, Portabbruch, PATH, kein Background-Profil. ArchitekturDraft ändert nur den M13-Absatz. review-round1.json und native-launch-agent.json sind historisch erhalten.",
+        "passed": true
+      }
+    ],
+    "decision": "APPROVED",
+    "findings": [],
+    "resolved_findings": [
+      "M13-R1-ENV",
+      "M13-R1-PORTOWNER",
+      "M13-R1-QAOVERRIDE",
+      "M13-R1-PROCTYPE"
+    ],
+    "review_id": "39579cd07db74e24a2307b09ffd1733f",
+    "submission_sha256": "faf9453ae33a0f545869e49bcae057fde0377ab0d6aa4dac94ab256f66bd5411",
+    "summary": "Runde 2 behebt alle vier Befunde aus Runde 1 gezielt und eng.\n\n**M13-R1-ENV:** `fleet-reader.mjs` liegt jetzt vor. Er nutzt nur `lstat` und `readFile` auf private Dateien sowie `fetch` zur Loopbackquelle. Unterprozesse und eine Abhängigkeit von PATH oder anderen Shellvariablen gibt es nicht. Das plist setzt zusätzlich nur einen festen System-PATH. Laut Entwickler lieferte die native QA unter der echten launchd-Umgebung vor und nach dem SIGTERM-Respawn jeweils einen authentisierten Overview mit 200/NATIVE/CURRENT und unveränderten Quellzeiten.\n\n**M13-R1-PORTOWNER:** `startAgent` bricht vor dem Bootstrap ab, wenn der Port belegt und kein eigener Job geladen ist. Nach dem Health-Check muss die PID des geladenen Jobs per `lsof` den Port besitzen. Ein selbst gebootstrapter Job wird bei einem Fehler wieder entladen. `autostart.mjs` prüft den Port nach dem gewollten Stop und vor dem Schreiben des plist. Die native Gegenprobe mit einer fremden Dummy-Instanz, die eine passende Health-Antwort gibt, wurde abgewiesen; der Dummy blieb unverändert.\n\n**M13-R1-QAOVERRIDE:** `enable` wird nur noch für das exakt passende, ausdrücklich deaktivierte Label aufgerufen. Ein Unit-Test deckt die Formate `disabled`/`true`/`enabled` und fremde Suffixe ab. Das Aufräumen in verschachtelten `finally`-Blöcken ist robust. Die QA prüft, dass kein neuer Override entsteht. Der alte Rest aus dem ersten Lauf ist ehrlich als OFFICE-BUG-0037 NIEDRIG dokumentiert, ohne globales `reset-disabled`.\n\n**M13-R1-PROCTYPE:** `ProcessType` ist entfernt, und ein Unit-Test sichert das ab.\n\nDie Docs stimmen mit dem Code überein: sieben Tests, Portabbruch, PATH, kein Background-Profil, die Grenzen „Start nach Anmeldung“ und „kein OS-Reboot“. Die reguläre Installation wird nicht als bereits erfolgt behauptet. Produkt-, Handels-, MT5- und Researchlogik sind unverändert.\n\nEs gibt keine offenen, umsetzbaren Befunde. Alle Testergebnisse stammen vom Entwickler; ich habe nichts selbst ausgeführt. Diese Freigabe autorisiert weder Installation noch Merge oder Deployment.",
+    "unverified": [
+      "Alle Test- und Betriebsergebnisse stammen vom Entwickler; nichts davon wurde vom Reviewer ausgeführt: 7 Node-Tests, native launchd-QA Runde 2 mit Fleet-Overview vor/nach Respawn, Dummy-Negativkontrolle, fehlender neuer Override, VPS-Befund, Agent 8766.",
+      "Das tatsächliche Ausgabeformat von `launchctl print-disabled` und `lsof -Fp` auf dem Zielsystem ist nur durch den vom Entwickler gemeldeten nativen Lauf belegt.",
+      "Für den Python-Agenten auf 8766 gibt es weiterhin nur eine Textaussage, keinen Rohbeleg.",
+      "Die reguläre Einrichtung per `./desk autostart` und der Overview gegen die agentgestartete Produktionsinstanz auf 43120 stehen noch aus. Sie sind ausdrücklich für nach dem Review vorgesehen und mit einer eigenen Betriebsquittung zu belegen.",
+      "Der Gesamtzustand des Repositorys (historische Reviews, alter M650-Bestand) wurde nur anhand des Diffs beurteilt; dieser enthält nur Ergänzungen."
+    ]
+  },
+  "test_evidence_kind": "developer-reported, not executed by this bridge"
+}

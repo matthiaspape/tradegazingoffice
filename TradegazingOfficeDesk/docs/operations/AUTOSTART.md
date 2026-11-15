@@ -33,7 +33,7 @@ Vor einem neuen Build für den laufenden Desk bewusst `./desk stop`, anschließe
 
 | Komponente | Startmechanismus | Tatsächlicher Befund am 15.11.2026 |
 | --- | --- | --- |
-| Gemeinsamer Office Desk 43120 | neuer Benutzer-LaunchAgent `de.tradegazing.office-main-desk` | manuell wiederhergestellt; neuer Startweg isoliert nativ geprüft, reguläre Einrichtung nach Review |
+| Gemeinsamer Office Desk 43120 | neuer Benutzer-LaunchAgent `de.tradegazing.office-main-desk` | regulär eingerichtet und aktiv; authentisierter nativer Abruf HTTP200/NATIVE/CURRENT,Agent-PID hält43120 |
 | Mac-Datenbackend 8766 | vorhandener Benutzer-LaunchAgent `de.tradegazing.office-desk`, RunAtLoad/KeepAlive | geladen; native Office-Abfrage liefert CURRENT |
 | VPS-Collector | Aufgabe `Tradegazing-FleetDesk-Collector`, Boottrigger, LOCAL SERVICE | Running, Start zwei Sekunden nach tatsächlichem Systemboot |
 | VPS-Reader 8765 | Aufgabe `Tradegazing-FleetDesk-Reader`, Boottrigger, NETWORK SERVICE | Running, Start zwei Sekunden nach tatsächlichem Systemboot, API-only/Loopback |
@@ -49,3 +49,10 @@ Der VPS bootete tatsächlich am 14.11.2026 um 16:03:01,500 UTC; beide Aufgaben l
 Grundlage der launchd-Semantik sind die auf dem Mac installierten Handbuchseiten `launchd.plist(5)` und `launchctl(1)`, insbesondere RunAtLoad/KeepAlive und Bootstrap/Bootout. Ein vorhandener Datenabruf und gesunde Dienstzustände werden übernommen; keine zusätzliche Rücklese-/Gesamtprüfserie.
 
 Der erste QA-Lauf hinterließ einen inaktiven `enabled`-Override für ein altes QA-Label; Job und plist sind entfernt. **OFFICE-BUG-0037, NIEDRIG**, Eintritt des Restes belegt: keine laufende Funktion oder Produktwirkung. Die Ursache ist korrigiert; neue QA-Labels werden nicht unnötig mit `enable` persistiert. Der vorhandene OS-Metadateneintrag bleibt bewusst erhalten, um keine fremden Benutzerpräferenzen mit einem globalen `reset-disabled` zurückzusetzen.
+
+
+## Reguläre Einrichtung und unabhängige Abnahme
+
+Dreamteam-Runde2 `39579cd07db74e24a2307b09ffd1733f`, Paket `faf9453ae33a0f545869e49bcae057fde0377ab0d6aa4dac94ab256f66bd5411`: **APPROVED, C1–C5 bestanden**, keine offenen Reviewbefunde. Alle vier Befunde aus Runde1 sind als behoben bestätigt; der niedrige alte Override-Rest bleibt separat dokumentiert. [Tatsächliche Reviewgrenzen](../mission-13/review-round2.json). Reviewer führte selbst keine Tests aus.
+
+Der geprüfte CLI-Stand `909e854` wurde am 15.11.2026 mit `./desk autostart` regulär eingerichtet. Erfolgsquittung `OFFICE_AUTOSTART_ENABLED`, Start bei Benutzeranmeldung und KeepAlive aktiv, bestehende Daten erhalten. Der erste authentisierte Datenabruf gegen den agentgestarteten Desk um09:57:42UTC lieferte HTTP200,NATIVE,einen CURRENT-Host,weiterhin null Flotten ohne EA-Exporte. Agent-PID und tatsächlicher Listener gehören zusammen. Private Quittung `.office-desk-data/dreamteam/mission-13-activation.json`. Kein weiterer Neustart oder zusätzliche Installations-Rücklese nötig; die erfolgreichen operativen Belege werden übernommen.

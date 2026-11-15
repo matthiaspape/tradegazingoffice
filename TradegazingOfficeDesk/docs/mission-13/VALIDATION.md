@@ -21,7 +21,7 @@ Der VPS benötigte keine Korrektur: Collector und API-Reader haben aktivierte Bo
 
 Der neue Mac-Start ist nach Benutzeranmeldung vorgesehen; kein systemweiter Betrieb vor Anmeldung/FileVault-Entsperrung. Der vollständige Mac-Neustart wurde nicht durch diese Mission ausgelöst. [Betrieb, genaue Start-/Stop-Befehle und Grenzen](../operations/AUTOSTART.md).
 
-Der aktuelle Betriebsauftrag autorisiert die reguläre Einrichtung und Aktivierung des geprüften eigenen LaunchAgents. Dreamteam prüft davor den gezielten Implementierungsstand. Historische M8–M12-Entscheidungen und bestehende Qualifikationsgrenzen bleiben erhalten. Benötigte Belege werden bewahrt; abgeschlossene zuverlässige Schritte werden nicht nochmals qualifiziert.
+Der aktuelle Betriebsauftrag autorisiert die reguläre Einrichtung und Aktivierung des geprüften eigenen LaunchAgents. Dreamteam prüfte davor den gezielten Implementierungsstand. Historische M8–M12-Entscheidungen und bestehende Qualifikationsgrenzen bleiben erhalten. Benötigte Belege werden bewahrt; abgeschlossene zuverlässige Schritte werden nicht nochmals qualifiziert.
 
 
 ## Reviewrunde 1 und gezielte Rückmeldung
@@ -34,3 +34,12 @@ Dreamteam `791bc925e96041caabbc39cde6c4249f`, Paket `40cbb99a5d500e6deeb91794f57
 - M13-R1-PROCTYPE: Background-Profil entfernt; normale launchd-Priorität, im Unit-Test gesichert.
 
 Die verknüpfte Folgeprüfung bewertet den korrigierten Stand. Reviewerbelege sind Entwicklerausführungen, keine vom Reviewer ausgeführten Tests.
+
+
+## Folgeabnahme und operative Erfüllung
+
+Dreamteam-Runde2 `39579cd07db74e24a2307b09ffd1733f`, Paket `faf9453ae33a0f545869e49bcae057fde0377ab0d6aa4dac94ab256f66bd5411`: **APPROVED, C1–C5 bestanden**, keine offenen Findings; M13-R1-ENV/PORTOWNER/QAOVERRIDE/PROCTYPE behoben. [Originalfeedback](review-round2.json). Sieben Node-Tests und erweiterte native launchd-QA sind Entwicklerbelege; der Reviewer führte selbst nichts aus.
+
+Der aktuelle Betriebsauftrag wurde nach dieser Abnahme ausgeführt: `./desk autostart` richtete `de.tradegazing.office-main-desk` erfolgreich ein und startete den vorhandenen Build. Der erste authentisierte Abruf um09:57:42UTC am15.11.2026 lieferte HTTP200/NATIVE,ein CURRENT-Host,Originalmessung09:57:13UTC,null Flotten bei weiterhin fehlendem EA. Der Agent-PID besitzt tatsächlich43120. Private Betriebsquittung `mission-13-activation.json` im eigenen Dreamteam-Datenordner. Quellstand909e854; danach nur Abschlussdokumentation/Core-/Boardpflege.
+
+OFFICE-BUG-0036 ist behoben. Mac startet nach Anmeldung automatisch,WindowsCollector/Reader bereits beim Systemboot. Gesunde bestehende Aufgaben und das Macbackend wurden nicht umgestellt; Daten,Zugänge,Mac-App-Einstieg und MT5-/Researchbetrieb erhalten. OFFICE-BUG-0037 bleibt ein inaktiver,beobachteter OS-Metadatenrest,NIEDRIG; keine globale Präferenzrücksetzung. Eigene aktive QA-Ressourcen und temporäre Authdaten sind entfernt. Erfolgreiche Quittungen tragen den administrativen Abschluss ohne neue Gesamt-/Rückleseprüfung.
