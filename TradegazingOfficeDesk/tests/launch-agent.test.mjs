@@ -4,7 +4,7 @@ import {mkdtempSync,writeFileSync,mkdirSync,symlinkSync,readFileSync,rmSync} fro
 import {tmpdir} from 'node:os';
 import {resolve,dirname} from 'node:path';
 import {execFileSync,spawnSync} from 'node:child_process';
-import {agentContext,plistXml,assertOwnedSpec,agentInstalled,parseAgentJob} from '../ops/launch-agent.mjs';
+import {agentContext,plistXml,assertOwnedSpec,agentInstalled,parseAgentJob,explicitlyDisabled} from '../ops/launch-agent.mjs';
 
 test('Office agent owns a separate label and starts foreground runtime with login and keepalive',()=>{
  const c=agentContext({home:'/tmp/test home',root:'/tmp/app root',dataHome:'/tmp/private data',node:'/tmp/node runtime',uid:501});
@@ -13,8 +13,17 @@ test('Office agent owns a separate label and starts foreground runtime with logi
  assert.equal(c.spec.RunAtLoad,true);assert.equal(c.spec.KeepAlive,true);
  assert.equal(c.spec.ProgramArguments[0],'/tmp/node runtime');
  assert.deepEqual(c.spec.ProgramArguments.slice(-5),['start','-H','127.0.0.1','-p','43120']);
- assert.deepEqual(c.spec.EnvironmentVariables,{TRADEGAZING_OFFICE_DESK_HOME:'/tmp/private data',TRADEGAZING_OFFICE_DESK_PORT:'43120'});
+ assert.deepEqual(c.spec.EnvironmentVariables,{TRADEGAZING_OFFICE_DESK_HOME:'/tmp/private data',TRADEGAZING_OFFICE_DESK_PORT:'43120',PATH:'/usr/bin:/bin:/usr/sbin:/sbin'});
+ assert.equal(c.spec.ProcessType,undefined,'Use normal interactive-server scheduling, not Background throttling');
  assert.equal(c.spec.Umask,0o077);assert.equal(c.spec.ThrottleInterval,30);
+});
+test('only an explicit disabled override for this exact label needs enabling',()=>{
+ const label='de.tradegazing.office-main-desk';
+ assert.equal(explicitlyDisabled(`"${label}" => disabled`,label),true);
+ assert.equal(explicitlyDisabled(`"${label}" => true`,label),true);
+ assert.equal(explicitlyDisabled(`"${label}" => enabled`,label),false);
+ assert.equal(explicitlyDisabled(`"${label}.qa-other" => disabled`,label),false);
+ assert.equal(explicitlyDisabled('',label),false);
 });
 test('plist roundtrip preserves spaces and XML-special characters without shell expansion',{skip:process.platform!=='darwin'},()=>{
  const c=agentContext({root:'/tmp/app & <root> "x"',dataHome:"/tmp/a 'b'",node:'/tmp/node & runtime'});

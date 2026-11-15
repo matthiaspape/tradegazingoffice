@@ -1,0 +1,33 @@
+{
+  "checked_at": "2026-11-15T09:53:20.246Z",
+  "isolated_port": 43122,
+  "production_configuration_untouched": true,
+  "foreign_health_process_rejected": true,
+  "fleet_before_restart": {
+    "http_status": 200,
+    "mode": "NATIVE",
+    "states": [
+      "CURRENT"
+    ],
+    "observed_at": [
+      "2026-11-15T09:52:13.3073274Z"
+    ]
+  },
+  "fleet_after_restart": {
+    "http_status": 200,
+    "mode": "NATIVE",
+    "states": [
+      "CURRENT"
+    ],
+    "observed_at": [
+      "2026-11-15T09:52:13.3073274Z"
+    ]
+  },
+  "loaded_and_healthy": true,
+  "idempotent_start": true,
+  "automatic_restart_after_sigterm": true,
+  "intentional_stop_unloads_job": true,
+  "bootstrap_after_stop": true,
+  "qa_resources_removed": true,
+  "new_qa_override": false
+}

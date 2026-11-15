@@ -13,8 +13,8 @@ export function agentContext({home=homedir(),dataHome=deskHome(),root=fileURLToP
  root=resolve(root);dataHome=resolve(dataHome);
  const plist=resolve(home,'Library/LaunchAgents',`${label}.plist`);
  const spec={Label:label,ProgramArguments:[node,resolve(root,'node_modules/vinext/dist/cli.js'),'start','-H','127.0.0.1','-p',String(port)],WorkingDirectory:root,
-  EnvironmentVariables:{TRADEGAZING_OFFICE_DESK_HOME:dataHome,TRADEGAZING_OFFICE_DESK_PORT:String(port)},
-  RunAtLoad:true,KeepAlive:true,ThrottleInterval:throttle,Umask:0o077,ProcessType:'Background',
+  EnvironmentVariables:{TRADEGAZING_OFFICE_DESK_HOME:dataHome,TRADEGAZING_OFFICE_DESK_PORT:String(port),PATH:'/usr/bin:/bin:/usr/sbin:/sbin'},
+  RunAtLoad:true,KeepAlive:true,ThrottleInterval:throttle,Umask:0o077,
   StandardOutPath:resolve(dataHome,'server.log'),StandardErrorPath:resolve(dataHome,'server.log')};
  return {plist,spec,uid,target:`gui/${uid}/${label}`,domain:`gui/${uid}`,origin:`http://127.0.0.1:${port}`};
 }
@@ -50,6 +50,15 @@ export function agentJob(context){
   throw error;
  }
 }
+export function portOwners(context){
+ let output;
+ try{output=execFileSync('/usr/sbin/lsof',['-nP',`-iTCP:${new URL(context.origin).port}`,'-sTCP:LISTEN','-Fp'],{encoding:'utf8',stdio:['ignore','pipe','pipe']});}
+ catch(error){if(error.status===1&&!String(error.stdout||'').trim()&&!String(error.stderr||'').trim())return [];throw error;}
+ return [...new Set(output.split('\n').filter(line=>/^p\d+$/.test(line)).map(line=>Number(line.slice(1))))];
+}
+export function explicitlyDisabled(output,label){
+ return output.split('\n').some(line=>{const match=line.match(/^\s*"([^"]+)"\s*=>\s*(\w+)/);return match?.[1]===label&&['disabled','true'].includes(match[2]);});
+}
 export async function waitForExit(pid){
  for(let i=0;i<100;i++){
   try{process.kill(pid,0);}catch(error){if(error.code==='ESRCH')return;throw error;}
@@ -66,9 +75,16 @@ export async function waitForOffice(origin){
 }
 export async function startAgent(context){
  if(!agentInstalled(context))throw new Error('Office-Autostart ist nicht eingerichtet.');
- if(!agentJob(context))execFileSync('/bin/launchctl',['bootstrap',context.domain,context.plist],{stdio:['ignore','pipe','pipe']});
- execFileSync('/bin/launchctl',['kickstart',context.target],{stdio:['ignore','pipe','pipe']});
- await waitForOffice(context.origin);
+ const initial=agentJob(context);
+ if(!initial&&portOwners(context).length)throw new Error('Office-Port ist bereits belegt; vorhandener Prozess bleibt unverändert.');
+ let bootstrapped=false;
+ try{
+  if(!initial){execFileSync('/bin/launchctl',['bootstrap',context.domain,context.plist],{stdio:['ignore','pipe','pipe']});bootstrapped=true;}
+  execFileSync('/bin/launchctl',['kickstart',context.target],{stdio:['ignore','pipe','pipe']});
+  await waitForOffice(context.origin);
+  const managed=agentJob(context);
+  if(!managed?.pid||!portOwners(context).includes(managed.pid))throw new Error('Der eigene LaunchAgent besitzt den Office-Port nicht.');
+ }catch(error){if(bootstrapped)await stopAgent(context);throw error;}
 }
 export async function stopAgent(context){
  if(!agentInstalled(context))return false;
@@ -88,5 +104,6 @@ export function writeAgent(context){
   try{writeFileSync(temporary,xml,{flag:'wx',mode:0o600});renameSync(temporary,context.plist);}
   finally{if(existsSync(temporary))unlinkSync(temporary);}
  }
- execFileSync('/bin/launchctl',['enable',context.target],{stdio:['ignore','pipe','pipe']});
+ const disabled=execFileSync('/bin/launchctl',['print-disabled',context.domain],{encoding:'utf8',stdio:['ignore','pipe','pipe']});
+ if(explicitlyDisabled(disabled,context.spec.Label))execFileSync('/bin/launchctl',['enable',context.target],{stdio:['ignore','pipe','pipe']});
 }

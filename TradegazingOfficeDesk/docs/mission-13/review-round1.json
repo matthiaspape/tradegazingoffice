@@ -1,0 +1,93 @@
+{
+  "review_id": "791bc925e96041caabbc39cde6c4249f",
+  "submission_sha256": "40cbb99a5d500e6deeb91794f575edf87807b50c4140c440593572a527963cdf",
+  "provider": {
+    "kind": "claude",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "review": {
+    "criteria_results": [
+      {
+        "criterion_id": "C1",
+        "evidence": "VALIDATION.md und AUTOSTART.md: Office 43120 per `./desk launch` wiederhergestellt, authentisierter Overview 200/NATIVE/CURRENT, Agent 8766 geladen. vps-startup.json: Boot 2026-11-14T16:03:01.5Z, Collector und Reader starten um 16:03:03Z mit Boottrigger und Dienstkonto, task_or_rights_changes=false. Keine Änderungen an Windows oder M650 im Diff. Belege sind vom Entwickler gemeldet; für 8766 gibt es nur eine Textaussage.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C2",
+        "evidence": "agentContext: Label `de.tradegazing.office-main-desk` (getrennt von `de.tradegazing.office-desk`), ProgramArguments node + vinext `start -H 127.0.0.1 -p 43120`, RunAtLoad/KeepAlive true, EnvironmentVariables nur HOME- und PORT-Pfade, keine Secrets. autostart.mjs verlangt vorhandene Zugangsdaten und einen vorhandenen Build, keine DB oder Migration. Das reduzierte Environment ist als M13-R1-ENV offen.",
+        "passed": true
+      },
+      {
+        "criterion_id": "C3",
+        "evidence": "stop.mjs: Bei installiertem und geladenem Agent folgt bootout und waitForExit; sonst Legacy-PID-Pfad mit Prüfung von Befehl und Port. launch.mjs: Bei installiertem Agent lädt startAgent denselben plist per bootstrap/kickstart. agentInstalled prüft lstat (kein Symlink), uid und Spec; parseAgentJob prüft den path des geladenen Jobs. autostart.mjs prüft Besitz vor stop.mjs und writeAgent. Die falsche Erfolgsquittung bei fremdem Port-Belegungsprozess ist als M13-R1-PORTOWNER offen (der fremde Prozess wird nicht beendet).",
+        "passed": true
+      },
+      {
+        "criterion_id": "C4",
+        "evidence": "Die Unit-Tests decken Spec, plutil-Sonderzeichen, fremde Konfiguration, Symlink/Besitzer, Jobherkunft und Legacy-Stop ab. Die native QA deckt bootstrap, SIGTERM-Respawn, bootout und Neustart ab. Die Grenzen (Login statt FileVault, kein OS-Reboot) und die Trennung der Windows-Belege sind ehrlich dokumentiert. Allerdings hinterlässt `launchctl enable` je QA-Lauf einen dauerhaften Override für das QA-Label, und der finally-Block bereinigt nicht robust (M13-R1-QAOVERRIDE).",
+        "passed": false
+      },
+      {
+        "criterion_id": "C5",
+        "evidence": "Der Diff ändert nur CLI-/ops-mjs, desk-Skript, Tests und Docs; Produkt-, Handels-, MT5- und Researchlogik bleiben unverändert. AUTOSTART-Tabelle: „reguläre Einrichtung nach Review“. VALIDATION und test_evidence: `./desk autostart` ist noch nicht ausgeführt. Root-AGENTS: „ausdrücklich einrichtbar“. Historische Missionseinträge sind nur ergänzt, nicht verändert.",
+        "passed": true
+      }
+    ],
+    "decision": "CHANGES_REQUESTED",
+    "findings": [
+      {
+        "file": "TradegazingOfficeDesk/ops/launch-agent.mjs",
+        "id": "M13-R1-ENV",
+        "impact": "Nach Login oder KeepAlive-Neustart könnte der Desk zwar laufen, die Fleet-Healthquelle aber ausfallen oder UNKNOWN liefern. Gerade nach einem Neustart soll der Fix diese Lücke schließen.",
+        "location": "agentContext → spec.EnvironmentVariables; vgl. ops/launch.mjs spawn env {...process.env,...}",
+        "problem": "Der bisherige Startweg in `launch.mjs` übergab die vollständige Benutzer-Shellumgebung (`...process.env`, also PATH, LANG und mögliche weitere Variablen). Der LaunchAgent übergibt nur TRADEGAZING_OFFICE_DESK_HOME und _PORT; launchd liefert sonst nur eine minimale Umgebung. Geprüft wurde nativ nur `/api/health` auf der QA-Instanz, nicht der authentisierte Overview mit NATIVE/CURRENT unter launchd. Die Module `ops/fleet-reader.mjs` und `fleet-sources.json` sind nicht eingereicht; ob sie von PATH oder anderen Variablen abhängen, ist offen.",
+        "recommendation": "Benötigte Umgebungsabhängigkeiten des Servers und des Fleet-Readers ermitteln und, wenn nötig, ohne Secrets ausdrücklich ins plist aufnehmen (z. B. PATH). Nach der regulären Ausführung von `./desk autostart` im Rahmen des Installationsschritts den authentisierten Overview (HTTP 200/NATIVE/CURRENT) gegen die agentgestartete Instanz prüfen und das Ergebnis dokumentieren.",
+        "severity": "P2",
+        "verification": "Nach `./desk autostart`: `launchctl print gui/$UID/de.tradegazing.office-main-desk` zeigt eine PID, und der authentisierte Overview liefert NATIVE/CURRENT mit unveränderten Quellzeiten. Optional: `launchctl kill SIGTERM` auslösen und nach dem Respawn denselben Befund erneut prüfen."
+      },
+      {
+        "file": "TradegazingOfficeDesk/ops/launch-agent.mjs",
+        "id": "M13-R1-PORTOWNER",
+        "impact": "Es entsteht eine falsche Erfolgsquittung, eine stille Neustart-Schleife im Log und ein Desk, der nicht wie dokumentiert vom Agenten verwaltet wird.",
+        "location": "startAgent / waitForOffice; ops/autostart.mjs; ops/launch.mjs Agentzweig",
+        "problem": "`waitForOffice` prüft nur, ob irgendein Prozess auf dem Port `/api/health` mit dem Namen `tradegazing-office-desk` beantwortet. Ein Beispiel: Auf 43120 läuft noch eine Instanz ohne server.pid, etwa nach einem fehlgeschlagenen Legacy-Start oder einem anders gestarteten Prozess. Dann meldet `stop.mjs` „bereits beendet“, und der Agent scheitert mit EADDRINUSE. KeepAlive startet ihn alle 30 s neu. Trotzdem gibt `autostart` OFFICE_AUTOSTART_ENABLED aus, und `launch` meldet Erfolg. Die fremde Instanz wird korrekt nicht beendet, der Erfolg ist aber falsch.",
+        "recommendation": "Vor `bootstrap` mit `running()` prüfen, ob schon eine Instanz auf dem Port antwortet, während kein eigener Job geladen ist. In diesem Fall mit klarer Meldung abbrechen, ohne den Prozess zu beenden. Nach dem Health-Erfolg zusätzlich prüfen, dass `agentJob(context).pid` gesetzt und nach kurzer Wartezeit unverändert ist (oder dass die PID der Port-Besitzer ist).",
+        "severity": "P2",
+        "verification": "Einen gezielten Test oder eine native QA ergänzen: Auf dem QA-Port 43122 läuft eine Dummy-Instanz, die Health beantwortet, und `startAgent` muss scheitern, statt Erfolg zu melden."
+      },
+      {
+        "file": "TradegazingOfficeDesk/ops/launch-agent.mjs",
+        "id": "M13-R1-QAOVERRIDE",
+        "impact": "Ein kleiner, wachsender Rest an QA-Einträgen in launchd. Die Aussage, die eigenen QA-Ressourcen seien vollständig bereinigt, stimmt damit nicht ganz.",
+        "location": "writeAgent → `launchctl enable`; tests/launch-agent-native.mjs finally-Block",
+        "problem": "`writeAgent` ruft immer `launchctl enable gui/<uid>/<label>` auf. Das schreibt einen Eintrag in die launchd-Override-Datenbank, der Neustarts überdauert. Der native QA-Lauf nutzt ein eindeutiges Label `...qa-<pid>`; sein finally-Block entfernt Job, plist und Temp-Daten, nicht aber diesen Eintrag. Jeder QA-Lauf hinterlässt also einen dauerhaften Rest. Außerdem fehlt eine innere try/finally-Absicherung: Wirft `stopAgent` im finally, wird `rmSync(dataHome)` nicht ausgeführt. Ein plist, das vor einem Fehler in `enable` geschrieben wurde, bleibt ebenfalls liegen.",
+        "recommendation": "`enable` nur aufrufen, wenn `launchctl print-disabled gui/<uid>` das Label als deaktiviert führt, oder für QA-Labels überspringen. Den verbleibenden Eintrag in AUTOSTART.md/VALIDATION.md ehrlich nennen. Den finally-Block so anlegen, dass `rmSync` und das Entfernen des plist auch nach Fehlern laufen.",
+        "severity": "P3",
+        "verification": "Nach einem QA-Lauf `launchctl print-disabled gui/$UID | grep office-main-desk.qa` ausführen: Es erscheint kein neuer Eintrag, oder der Rest ist dokumentiert."
+      },
+      {
+        "file": "TradegazingOfficeDesk/ops/launch-agent.mjs",
+        "id": "M13-R1-PROCTYPE",
+        "impact": "Mögliche spürbare Verzögerungen bei UI- und API-Antworten oder beim Fleet-Abruf unter Last.",
+        "location": "agentContext spec.ProcessType:'Background'",
+        "problem": "Laut `launchd.plist(5)` unterliegen Jobs mit `ProcessType` Background CPU- und I/O-Drosselung, weil sie für Arbeit gedacht sind, die der Nutzer nicht direkt anfordert. Der Office Desk ist aber eine interaktive, nutzergerichtete Webanwendung. Die Docs erwähnen diese Wahl nicht.",
+        "recommendation": "`ProcessType` auf `Standard` setzen (oder den Schlüssel weglassen), alternativ die bewusste Wahl dokumentieren. Den Unit-Test entsprechend anpassen.",
+        "severity": "P3",
+        "verification": "`node --test tests/launch-agent.test.mjs` prüft den erwarteten ProcessType, und der plutil-Rundlauf besteht weiterhin."
+      }
+    ],
+    "resolved_findings": [],
+    "review_id": "791bc925e96041caabbc39cde6c4249f",
+    "submission_sha256": "40cbb99a5d500e6deeb91794f575edf87807b50c4140c440593572a527963cdf",
+    "summary": "Der Fix ist eng und klar abgegrenzt. Der eigene Benutzer-LaunchAgent `de.tradegazing.office-main-desk` ist sauber vom Python-Agenten auf 8766 getrennt. RunAtLoad, KeepAlive und Loopback 43120 sind gesetzt, der Datenpfad wird ausdrücklich übergeben, und es stehen keine Secrets im plist. Besitz und Herkunft werden vor Stop und Schreiben geprüft. Der Stop entlädt den Job per bootout statt ihn per KeepAlive neu zu starten. Der Legacy-Weg und der Schutz fremder PIDs bleiben erhalten. Die Docs behaupten die reguläre Installation nicht vorab. Offen sind vier Punkte. Erstens erhält der Agent nur zwei Umgebungsvariablen statt wie bisher `process.env`; ob die native Fleet-Abfrage unter launchd funktioniert, ist ungeprüft. Zweitens kann `startAgent` einen Erfolg melden, obwohl eine andere Instanz auf dem Port antwortet und der Agent in einer Fehlerschleife hängt. Drittens hinterlässt der native QA-Lauf über `launchctl enable` einen dauerhaften Override-Eintrag für sein QA-Label. Viertens setzt das plist `ProcessType` auf Background, was für einen interaktiven Desk unpassend ist. Alle Testergebnisse stammen vom Entwickler; ich habe nichts selbst ausgeführt.",
+    "unverified": [
+      "Alle Test- und Betriebsergebnisse (6 Node-Tests, native launchd-QA, VPS-SSH-Befund, Health NATIVE/CURRENT, geladener Agent auf 8766) stammen vom Entwickler; nichts davon wurde vom Reviewer ausgeführt.",
+      "Für den Zustand des Python-Agenten auf 8766 gibt es nur eine Textaussage, keinen eingereichten Rohbeleg (z. B. Ausgabe von `launchctl print`).",
+      "Die Umgebungsabhängigkeiten von `ops/fleet-reader.mjs`, `fleet-sources.json` und dem vinext-Server sind nicht eingereicht und wurden nicht geprüft.",
+      "Das genaue Format von `launchctl print` (path- und pid-Zeilen) und die stderr-Meldung bei fehlendem Dienst sind nur durch den vom Entwickler gemeldeten nativen Lauf belegt.",
+      "Die Unversehrtheit historischer Reviews und des alten M650-Bestands lässt sich nur am Diff ablesen (nur Ergänzungen); der Gesamtzustand des Repositorys wurde nicht eingesehen."
+    ]
+  },
+  "test_evidence_kind": "developer-reported, not executed by this bridge"
+}
