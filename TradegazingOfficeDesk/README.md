@@ -10,6 +10,8 @@ Das [gemeinsame UI/UX-Zielbild](../docs/TradegazingOfficeDeskUX.md) beschreibt d
 
 ## Start
 
+macOS-Autostart für die vorhandene eingerichtete Installation: `./desk autostart`. Der eigene Benutzer-LaunchAgent startet nach Anmeldung und hält den Desk am Leben. Danach gewollten Stop/Start mit `./desk stop` beziehungsweise `./desk launch` ausführen. [Betrieb und Grenzen](docs/operations/AUTOSTART.md).
+
 Node.js 24+ und npm bei einer frischen Installation:
 
 ```sh

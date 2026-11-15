@@ -1,0 +1,12 @@
+{
+  "observed_on": "2026-11-15",
+  "read_only_ssh_inspection": true,
+  "last_system_boot_utc": "2026-11-14T16:03:01.5000000Z",
+  "tasks": [
+    {"name":"Tradegazing-FleetDesk-Collector","state":"Running","principal":"LOCAL SERVICE","logon_type":"ServiceAccount","last_run_utc":"2026-11-14T16:03:03.0000000Z","boot_trigger_enabled":true,"start_when_available":true,"execution_time_limit":"PT0S","multiple_instances":"IgnoreNew"},
+    {"name":"Tradegazing-FleetDesk-Reader","state":"Running","principal":"NETWORK SERVICE","logon_type":"ServiceAccount","last_run_utc":"2026-11-14T16:03:03.0000000Z","boot_trigger_enabled":true,"start_when_available":true,"execution_time_limit":"PT0S","multiple_instances":"IgnoreNew"}
+  ],
+  "matching_processes": {"collector":true,"reader_api_only_loopback_8765":true},
+  "task_or_rights_changes": false,
+  "mt5_or_system_restart_performed": false
+}

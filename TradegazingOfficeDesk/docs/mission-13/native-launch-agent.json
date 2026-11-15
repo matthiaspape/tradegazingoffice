@@ -1,0 +1,9 @@
+{
+  "checked_at": "2026-11-15T09:40:55.364Z",
+  "isolated_port": 43122,
+  "loaded_and_healthy": true,
+  "automatic_restart_after_sigterm": true,
+  "intentional_stop_unloads_job": true,
+  "bootstrap_after_stop": true,
+  "production_untouched": true
+}

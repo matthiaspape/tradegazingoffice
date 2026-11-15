@@ -4,12 +4,17 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deskHome, origin } from './config.mjs';
 import { credentials } from './auth.mjs';
+import {agentContext,agentInstalled,startAgent} from './launch-agent.mjs';
 const root = fileURLToPath(new URL('..', import.meta.url));
 async function running() {
   try {
     const response = await fetch(`${origin}/api/health`, { signal: AbortSignal.timeout(1500) });
     return response.ok && (await response.json()).name === 'tradegazing-office-desk';
   } catch { return false; }
+}
+if(process.platform==='darwin'&&origin==='http://127.0.0.1:43120'){
+  const context=agentContext();
+  if(agentInstalled(context)){credentials();await startAgent(context);console.log(origin);process.exit(0);}
 }
 if (await running()) { console.log(origin); process.exit(0); }
 credentials();
