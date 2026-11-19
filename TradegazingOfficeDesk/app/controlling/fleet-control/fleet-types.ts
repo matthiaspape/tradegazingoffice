@@ -2,6 +2,7 @@ export type Point = {at:string;value:string|null};
 export type Volume = {name:string;total:number|null;used:number|null;percent:number|null};
 export type Fleet = {
  id:string;hostId:string;name:string;broker:string;deploymentId:string;environment:string;currency:string;
+ subtitle?:string;
  observedAt:string|null;freshSeconds:number;state:string;status:string;sharedAccount:boolean;
  balance:string|null;equity:string|null;profitToday:string|null;unrealized:string|null;series:Point[];reasons:string[];positionMode:string;
  variants:{symbol:string;timeframe:number|null;pool:string;revision:string;ready:boolean|null}[];

@@ -71,13 +71,15 @@ Alternativ kann dem Skript ein ausdrücklich gewählter, geschützter Mac-Konfig
     "ip": "192.0.2.10", "endpoint": "http://127.0.0.1:8766/",
     "token_file": "/private/office-reader-key.txt", "fresh_seconds": 900,
     "bindings": [{
-      "id": "nova", "name": "Nova", "broker": "Beispielbroker",
+      "id": "nova", "name": "Nova", "subtitle": "Beispielstrategie", "broker": "Beispielbroker",
       "account_key": "broker/server/account", "environment": "DEMO",
       "deployment_id": "belegter-einsatz"
     }]
   }]
 }
 ```
+
+`name` ist der angezeigte Flottentitel. Ein optionaler `subtitle` erscheint darunter auf der Karte und in der Detailansicht. Die Flotten-ID für Links und die Quellzuordnung sind davon unabhängig. Der vorhandene FTMO-Demo-Einsatz erscheint im regulären Desk als **NOVA** mit dem Untertitel **Margin-Effizienz V10**.
 
 Jede Flottenbindung braucht tatsächliche Quellbelege. Ohne Bindung erscheint ein bekanntes Konto als noch unzugeordnet; ohne EA gibt es keine erfundene Karte. RESEARCH benötigt zusätzlich `run_id`. Hostidentitäten und Registry-IDs sind eindeutig. Weitere Hosts können über eigene schon vorhandene lokale Reader registriert werden; diese Mission startet keine zusätzlichen VPS-Dienste.
 

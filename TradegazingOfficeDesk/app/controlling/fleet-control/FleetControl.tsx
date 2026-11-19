@@ -80,14 +80,32 @@ export default function FleetControl({vpsId,fleetId}:{vpsId?:string;fleetId?:str
   <div className="fc-badges">{f?fleetChip(f):h?healthChip(h):null}<Chip>Datenquelle: {mode==='DEMO'?'Fiktive Beispieldaten':'VPS-Daten'}</Chip></div>
   <p className="fc-muted">Verbindung: {sessionExpired?'nicht geprüft (Office-Sitzung abgelaufen)':error?'nicht geprüft (Office-Abruf fehlgeschlagen)':`${mode==='DEMO'?'fiktiv · ':''}${h?.connection==='CURRENT'?'aktuell':h?.connection==='STALE'?'veraltet':'nicht verfügbar'}`} · Letzter Backendabruf {stamp(h?.lastPull??null)}</p>
  </div>;
- const fleetCard=(f:Fleet)=><a key={f.id} className="fc-fleet" href={link(`${base}/${encodeURIComponent(f.id)}`)}><div className="fc-fleet-head"><div><h3>{f.name} <span aria-hidden="true">↗</span></h3><p>{f.broker} · {f.environment}</p></div><div className="fc-badges"><Chip>{f.status}</Chip>{fleetChip(f)}</div></div>{f.sharedAccount&&<p className="fc-muted">Konto gesamt · geteilt · keine Flottensumme</p>}<FleetValues fleet={f} current={fresh(f.observedAt,f.state,f.freshSeconds)}/><Plot points={f.series} label={f.sharedAccount?'Konto-Equity · geteilt':'Konto-Equity'} currency={f.currency} now={now} range={range}/><p className="fc-muted">Beobachtet {stamp(f.observedAt)} · Flottendetails öffnen →</p></a>;
+ const fleetCard=(f:Fleet)=><a key={f.id} className="fc-fleet" href={link(`${base}/${encodeURIComponent(f.id)}`)}>
+  <div className="fc-fleet-head">
+   <div className="fc-fleet-name">
+    <h3>{f.name} <span aria-hidden="true">↗</span></h3>
+    {f.subtitle&&<p className="fc-fleet-subtitle">{f.subtitle}</p>}
+    <p>{f.broker} · {f.environment}</p>
+   </div>
+   <div className="fc-badges"><Chip>{f.status}</Chip>{fleetChip(f)}</div>
+  </div>
+  {f.sharedAccount&&<p className="fc-muted">Konto gesamt · geteilt · keine Flottensumme</p>}
+  <FleetValues fleet={f} current={fresh(f.observedAt,f.state,f.freshSeconds)}/>
+  <Plot points={f.series} label={f.sharedAccount?'Konto-Equity · geteilt':'Konto-Equity'} currency={f.currency} now={now} range={range}/>
+  <p className="fc-muted">Beobachtet {stamp(f.observedAt)} · Flottendetails öffnen →</p>
+ </a>;
  const hostCard=(h:Host)=><section className="fc-vps" key={h.id}><header className="fc-vps-head"><div><h2><a href={link(`/controlling/vps/${encodeURIComponent(h.id)}`)}>{h.name} →</a></h2><p className="fc-ip">IP {h.ip||'nicht hinterlegt'}</p></div>{healthChip(h)}</header><HostValues host={h} current={fresh(h.observedAt,h.state)}/>{h.issue&&<p className="fc-notice">{h.issue}</p>}{h.attention.map((a,i)=><p className="fc-notice" key={i}>{a}</p>)}{h.fleets.length?<div className="fc-fleet-grid">{h.fleets.map(fleetCard)}</div>:<p className="fc-empty">{h.waitingForEa?'Noch keine EA-Exportquellen angebunden. VPS-Health läuft unabhängig.':'Keine gebundenen Flotteneinsätze.'}{h.unboundAccounts>0?` ${h.unboundAccounts} Konten warten auf Flottenzuordnung.`:''}</p>}</section>;
  const host=data?.hosts.find(h=>h.id===vpsId),fleet=data?.hosts.flatMap(h=>h.fleets).find(f=>f.id===fleetId);
  const detail=vpsId?host?.name:fleetId?fleet?.name:undefined;
- const hostOfFleet=fleet?data?.hosts.find(h=>h.id===fleet.hostId):null;
+ const hostOfFleet=fleet?data?.hosts.find(h=>h.id===fleet.hostId):undefined;
  const table=(headers:string[],rows:ReactNode[][])=>rows.length?<div className="fc-table"><table><thead><tr>{headers.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table></div>:<p className="fc-empty">Noch keine belegten Daten für diesen Bereich.</p>;
  return <DeskShell current="fleet" className="fc-page" detail={detail} fleetMode={mode}>
-  <header className="mission-hero fc-hero"><div><p className="kicker">Controlling · {vpsId?'VPS-Detail':fleetId?'Flottendetail':'VPS & Flotten'}</p><h1>{detail||'Fleet Control'}</h1><p>Alle VPS im Blick. Jede Flotte dort, wo sie läuft.</p>{host?detailStatus(host):fleet?detailStatus(data?.hosts.find(h=>h.id===fleet.hostId),fleet):null}</div></header>
+  <header className="mission-hero fc-hero"><div>
+   <p className="kicker">Controlling · {vpsId?'VPS-Detail':fleetId?'Flottendetail':'VPS & Flotten'}</p>
+   <h1>{detail||'Fleet Control'}</h1>
+   {fleet?.subtitle?<p className="fc-fleet-subtitle">{fleet.subtitle}</p>:<p>Alle VPS im Blick. Jede Flotte dort, wo sie läuft.</p>}
+   {host?detailStatus(host):fleet?detailStatus(hostOfFleet,fleet):null}
+  </div></header>
   <div className="fc-toolbar"><label>Datenquelle<select value={mode} onChange={e=>location.assign(`${base}?mode=${e.target.value==='DEMO'?'demo':'native'}&range=${range}`)}><option value="NATIVE">Vorhandene VPS-Daten</option><option value="DEMO">Fiktive Beispieldaten</option></select></label><label>Beobachtungsfenster<select value={range} onChange={e=>{const v=Number(e.target.value);setRange(v);const q=new URL(location.href);q.searchParams.set('range',String(v));history.replaceState(null,'',q);}}><option value="24">Letzte 24 Stunden</option><option value="168">Bis zu 7 Tage</option></select></label><p>Lesender Abruf alle 5 Minuten · Europe/Berlin</p></div>
   {mode==='DEMO'&&<p className="fc-notice fc-demo">Designbeispiele · vollständig fiktive Handels- und Hostdaten. Keine Liveverbindung.</p>}
   {error&&<p className="fc-notice" role="alert">{error} {sessionExpired&&<button type="button" onClick={()=>location.reload()}>Seite neu laden</button>}</p>}

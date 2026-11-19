@@ -51,6 +51,16 @@ test('source registry rejects remote/credential URLs, duplicate identities and u
  for(const patch of [{endpoint:'http://example.com/'},{endpoint:'http://user:secret@127.0.0.1:8766/'},{fresh_seconds:20},{bindings:[{...binding,environment:'RESEARCH'}]}])assert.throws(()=>validateSources({version:1,hosts:[{...host,...patch}]}));
  assert.throws(()=>validateSources({version:1,hosts:[host,{...host,id:'second'}]}));
 });
+test('fleet title and optional subtitle are projected from the registry',()=>{
+ const configured={...binding,name:'NOVA',subtitle:'Margin-Effizienz V10'};
+ const [registered]=validateSources({version:1,hosts:[{...host,bindings:[configured,{...binding,id:'other'}]}]});
+ const [named,legacy]=projectHost(registered,bundle(),now).fleets;
+ assert.deepEqual([named.id,named.name,named.subtitle],['primary.nova','NOVA','Margin-Effizienz V10']);
+ assert.equal(legacy.subtitle,undefined);
+ for(const subtitle of [null,'   ',123,'x'.repeat(201)]){
+  assert.throws(()=>validateSources({version:1,hosts:[{...host,bindings:[{...binding,subtitle}]}]}),/Invalid fleet subtitle/);
+ }
+});
 test('reader coalesces concurrent initial loads and keeps credentials out of its public model',async()=>{
  let calls=0;const token='fake-test-key-does-not-authorize-anywhere';
  const reader=createReader({clock:()=>now,readToken:()=>token,fetcher:async(url,options)=>{calls++;assert.equal(options.headers.Authorization,`Bearer ${token}`);return Response.json(String(url).includes('health')?bundle().health:bundle().desk);}});

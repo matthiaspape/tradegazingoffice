@@ -62,6 +62,7 @@ export function fleetModel(binding, accounts, host, now, offline) {
   const payload = a?.account ?? {};
   return {
     id: `${host.id}.${binding.id}`, hostId: host.id, name: binding.name, broker: binding.broker,
+    subtitle: binding.subtitle?.trim(),
     deploymentId: binding.deployment_id, environment: binding.environment, currency: text(payload.currency),
     observedAt: a?.observed_at ?? null, freshSeconds, state: offline && state === 'CURRENT' ? 'STALE' : state,
     sharedAccount: host.bindings.filter(b => b.account_key === binding.account_key && b.environment === binding.environment && (b.run_id ?? null) === (binding.run_id ?? null)).length > 1,

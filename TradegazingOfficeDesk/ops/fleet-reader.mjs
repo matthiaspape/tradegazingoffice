@@ -26,6 +26,7 @@ export function validateSources(value) {
     const bindings = new Set();
     for (const b of h.bindings) {
       if (!slug(b.id) || bindings.has(b.id) || !label(b.name) || !label(b.broker) || !label(b.account_key) || !label(b.deployment_id) || !['LIVE','DEMO','RESEARCH'].includes(b.environment) || (b.environment === 'RESEARCH' && !label(b.run_id))) throw new Error('Invalid fleet binding');
+      if (b.subtitle !== undefined && (!label(b.subtitle) || !b.subtitle.trim())) throw new Error('Invalid fleet subtitle');
       bindings.add(b.id);
     }
   }
