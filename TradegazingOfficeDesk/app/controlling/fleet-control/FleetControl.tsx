@@ -8,10 +8,13 @@ import './unified.css';
 
 const base='/controlling/fleet-control';
 const stamp=(at:string|null)=>at?new Date(at).toLocaleString('de-DE',{timeZone:'Europe/Berlin'}):'—';
-const num=(v:number|null,suffix='')=>v===null?'—':`${new Intl.NumberFormat('de-DE',{maximumFractionDigits:1}).format(v)}${suffix}`;
+const metricFormat=new Intl.NumberFormat('de-DE',{maximumFractionDigits:1});
+const euroFormat=new Intl.NumberFormat('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2,signDisplay:'negative'});
+const num=(v:number|null,suffix='')=>v===null?'—':`${metricFormat.format(v)}${suffix}`;
 const bytes=(v:number|null)=>v===null?'—':`${num(v/1024**3)} GiB`;
 function money(value:string|null,currency:string){
  if(value===null)return '—';
+ if(currency==='EUR')return `${euroFormat.format(value as Intl.StringNumericLiteral)} EUR`;
  const [whole,fraction]=value.split('.');
  return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g,'.')}${fraction?','+fraction:''} ${currency}`;
 }
@@ -25,7 +28,8 @@ function Plot({points,label,currency='',now,range}:{points:Point[];label:string;
  const first=Date.parse(list[0][1].at),last=Date.parse(list.at(-1)![1].at),duration=last-first||1;
  const segments:string[][]=[];let segment:string[]=[];
  list.forEach(([slot,p],i)=>{if(i&&slot-list[i-1][0]>1){segments.push(segment);segment=[];}segment.push(`${10+(Date.parse(p.at)-first)/duration*780},${170-(Number(p.value)-lo)/span*145}`);});segments.push(segment);
- return <figure className="fc-plot"><svg viewBox="0 0 800 190" preserveAspectRatio="none" aria-hidden="true"><path className="fc-gridline" d="M0 25H800 M0 100H800 M0 170H800"/>{segments.map((s,i)=>s.length===1?<circle key={i} cx={s[0].split(',')[0]} cy={s[0].split(',')[1]} r="3"/>:<polyline key={i} points={s.join(' ')}/>)}</svg><figcaption><strong>{label}</strong><span>{stamp(list[0][1].at)} → {stamp(list.at(-1)![1].at)}</span><span>{money(list[0][1].value,currency)} → {money(list.at(-1)![1].value,currency)} · {list.length} Beobachtungen{segments.length>1?' · Messlücken':''}</span></figcaption></figure>;
+ const formatValue=(value:string|null)=>currency==='%'?num(value===null?null:Number(value),' %'):money(value,currency);
+ return <figure className="fc-plot"><svg viewBox="0 0 800 190" preserveAspectRatio="none" aria-hidden="true"><path className="fc-gridline" d="M0 25H800 M0 100H800 M0 170H800"/>{segments.map((s,i)=>s.length===1?<circle key={i} cx={s[0].split(',')[0]} cy={s[0].split(',')[1]} r="3"/>:<polyline key={i} points={s.join(' ')}/>)}</svg><figcaption><strong>{label}</strong><span>{stamp(list[0][1].at)} → {stamp(list.at(-1)![1].at)}</span><span>{formatValue(list[0][1].value)} → {formatValue(list.at(-1)![1].value)} · {list.length} Beobachtungen{segments.length>1?' · Messlücken':''}</span></figcaption></figure>;
 }
 function FleetValues({fleet,current}:{fleet:Fleet;current:boolean}){
  const rows=[['Konto-Balance',fleet.balance,'native Kontowährung'],['Konto-Equity',fleet.equity,'beobachteter Kontostand'],['Profit heute',fleet.profitToday,'heute gebucht · netto'],['Unrealized PnL',fleet.unrealized,'offen · nicht gebucht']];

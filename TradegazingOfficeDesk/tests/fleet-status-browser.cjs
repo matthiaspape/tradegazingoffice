@@ -40,6 +40,32 @@ function sample({state='CURRENT',connection='CURRENT'}={}){
     await p.getByText('Daten fehlen / veraltet',{exact:true}).waitFor();assert.equal(sessions(),0);
    }finally{await p.close();}
   });
+  await check('native amounts round to cents and VPS charts use the same precision as VPS cards',async()=>{
+   for(const [query,selector] of [['','.fc-fleet'],['?test-fleet=test.fleet','.fc-page'],['?test-vps=test','.fc-page']]){
+    const {p,mount}=await page(query);
+    try{
+     const data=sample(),host=data.hosts[0],fleet=host.fleets[0];
+     host.cpu=42.123456;
+     host.series=[{at:host.observedAt,cpu:host.cpu,ram:null,volumes:[]}];
+     fleet.balance='9007199254740993.995';
+     fleet.equity='1234';
+     fleet.profitToday='-12.345';
+     fleet.unrealized='-0.004';
+     fleet.series=[{at:new Date(time-315000).toISOString(),value:'1234.56789'},{at:fleet.observedAt,value:fleet.equity}];
+     await p.route(endpoint,r=>r.fulfill({json:data}));
+     await mount();
+     const view=p.locator(selector);
+     await view.locator('.fc-values').waitFor();
+     const values=await view.locator('.fc-values dd').allInnerTexts();
+     assert.deepEqual(values.map(value=>value.split('\n')[0]),['9.007.199.254.740.994,00 EUR','1.234,00 EUR','-12,35 EUR','0,00 EUR']);
+     assert.ok((await view.locator('figcaption').filter({hasText:'Konto-Equity'}).innerText()).includes('1.234,57 EUR → 1.234,00 EUR'));
+     if(query==='?test-vps=test'){
+      assert.ok((await view.locator('.fc-host-values').innerText()).includes('42,1 %'));
+      assert.ok((await view.locator('figcaption').filter({hasText:'Fünf-Minuten-Mittel'}).innerText()).includes('42,1 % → 42,1 %'));
+     }
+    }finally{await p.close();}
+   }
+  });
   for(const detail of ['vps','fleet'])await check(`0033: ${detail} demo detail explicitly labels fictional data`,async()=>{
    const {p,mount,sessions}=await page(detail==='vps'?'?mode=demo&test-vps=atlas':'?mode=demo&test-fleet=nova');
    try{

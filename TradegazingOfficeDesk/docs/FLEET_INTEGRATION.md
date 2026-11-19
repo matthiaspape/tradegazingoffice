@@ -33,6 +33,8 @@ Der erste reguläre authentisierte Office-Datenabruf lieferte HTTP 200, Modus NA
 
 Die Quelle meldete HEDGING. Im geprüften Stand waren keine Varianten-Snapshots verfügbar. Tagesnetto, offene Gesamtbewertung und EA-Gesamtstatus sind im Reader weiterhin nicht qualifiziert. Die Equity-Zeitreihe zeigt das native Konto.
 
+Eurobeträge erscheinen in Flottenkarten, Detailansichten und Verlaufstexten mit genau zwei Nachkommastellen. Die Darstellung rundet die Dezimalstrings direkt auf Cent. VPS-Prozentwerte erscheinen in Kennzahlen und Verlaufstexten mit bis zu einer Nachkommastelle.
+
 ## Daten, Rechte und Grenzen
 
 `GET /api/fleet-control/overview` prüft die vorhandene Office-Autorisierung und Origin-/Loopbackgrenze. Der Aufrufer darf keine Quell-URL oder sonstige Quellparameter übergeben. Ziele kommen nur aus der privaten Registrierung; ausschließlich HTTP auf `127.0.0.1` mit ausdrücklichem Port, ohne URL-Zugänge oder Umleitungen. Jede Antwort ist `no-store`.
