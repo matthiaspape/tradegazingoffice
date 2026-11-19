@@ -21,11 +21,17 @@ Der jeweilige VPS-Name und die gesamte Flottenkarte sind semantische Links. Der 
 
 Die vorhandene Macquelle auf `127.0.0.1:8766` wurde für die lokale lesende Anschlussprüfung verbunden. `ops/connect-fleet.mjs` hat einen **eigenen widerrufbaren Office-Serverzugang** in der bestehenden Mac-Geräteliste registriert. Der erfolgreiche authentisierte Healthabruf lieferte 151 Healthfenster und eine passende Hostidentität. Die Quittung enthält keine Schlüssel. Der laufende Python-Prozess liest die Geräteliste je Anfrage; ein Neustart ist dafür nicht erforderlich.
 
-Ein isoliertes Office auf Port 43121 mit eigener leerer Projektmanagement-Datenbank liest dieselbe Quelle. Der Browsercheck bestätigt native Hostdaten, den EA-losen Zustand und funktionierende VPS-Details. Es gibt derzeit weiterhin keine gebundenen aktuellen EA-Exportquellen. Die native Übersicht erfindet deshalb keine Flotten oder Handelssalden.
+Ein isoliertes Office auf Port 43121 mit eigener leerer Projektmanagement-Datenbank liest dieselbe Quelle. Der Browsercheck bestätigt native Hostdaten, den EA-losen Zustand und funktionierende VPS-Details. Zu diesem Zeitpunkt waren keine aktuellen EA-Exportquellen gebunden.
 
 Nach der ausdrücklichen Freigabe **„Jetzt im Office aktivieren“** wurde der reguläre Office-Prozess auf 43120 am 14.11.2026 mit dem geprüften Build gestartet. Der vorhandene Mac-App-Einstieg `~/Applications/Tradegazing Office Desk.app` öffnet jetzt den gemeinsamen Office Desk auf 43120. Das vorhandene Python-Macbackend auf 8766 und die VPS-Dienste bleiben als Mess-/Transportgrundlage erhalten.
 
 Der erste reguläre authentisierte Office-Datenabruf lieferte HTTP 200, Modus NATIVE, einen gebundenen Host mit CURRENT-Health und weiterhin null Flotten bei fehlenden EA-Exporten. Die operative Quittung liegt privat unter `.office-desk-data/dreamteam/mission-8-activation.json`. Erfolgreiche Quittungen und vorhandene Testbelege übernommen; keine zusätzliche Rücklese-/Installations- oder Gesamtqualifikationsserie. Die eigene QA-Instanz auf 43121 wurde beendet und ihre leere temporäre Datenablage entfernt. Reguläre Projektmanagement-Daten und laufende Messdienste bleiben erhalten.
+
+### Erster nativer Flotteneinsatz am 19.11.2026
+
+[Office-Mission 14](http://127.0.0.1:43120/missions?mission=14) ordnete die bereits beobachtete Quelle der FTMO-Demo-Flotte Margin-Effizienz V9 aus Tradegazing-Mission 722 dem vorhandenen VPS in der privaten Office-Registrierung zu. Vorher meldete der reguläre Office-Endpunkt ein unzugeordnetes Konto und null Flotten. Danach lieferte er die Flottenkarte im Modus NATIVE mit dem Status CURRENT, nativer Balance, Equity und 48 gemessenen Equity-Punkten. Eine Browserprüfung im regulären Desk bestätigte die native Flottenkarte und den Aufruf des Flottendetails mit Konto-Equity. Der laufende Office-Prozess übernimmt die private Zuordnung beim nächsten normalen Abruf.
+
+Die Quelle meldete HEDGING. Im geprüften Stand waren keine Varianten-Snapshots verfügbar. Tagesnetto, offene Gesamtbewertung und EA-Gesamtstatus sind im Reader weiterhin nicht qualifiziert. Die Equity-Zeitreihe zeigt das native Konto.
 
 ## Daten, Rechte und Grenzen
 
