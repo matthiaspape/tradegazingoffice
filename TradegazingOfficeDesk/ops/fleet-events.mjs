@@ -11,10 +11,12 @@ const CURSOR = /^\d{1,19}$/;
 const cursorValue = value => typeof value === 'string' && CURSOR.test(value) && BigInt(value) < 2n ** 63n ? BigInt(value) : null;
 
 function emptyJournal() {
-  return { cursor: '0', deals: new Map(), incidents: new Map(), heartbeats: new Map(), superseded: new Map(), pulledAt: null };
+  return { cursor: '0', deals: new Map(), incidents: new Map(), heartbeats: new Map(), superseded: new Map(), pulledAt: null, complete: false };
 }
+const staged = j => ({ ...j, deals: new Map(j.deals), incidents: new Map(j.incidents), heartbeats: new Map(j.heartbeats), superseded: new Map(j.superseded) });
+// journal: accepted state shown by the desk; recovery: a reread from cursor 0 in progress.
 export function createEventStore() {
-  return { journal: emptyJournal(), failed: false, failures: 0, lastError: null };
+  return { journal: emptyJournal(), recovery: null, failed: false, failures: 0, lastError: null };
 }
 
 // Keeps the newest entries by exact cursor order.
@@ -33,7 +35,14 @@ export function ingest(journal, observations) {
     const row = o?.original, cursor = cursorValue(o?.cursor);
     if (!row || typeof row !== 'object' || cursor === null || typeof row.record_id !== 'string' || typeof row.record_type !== 'string') continue;
     const scope = scopeKey(row), entry = { cursor, row, scope, deployment: deploymentKey(row) };
-    if (typeof row.supersedes_record_id === 'string') put(journal.superseded, `${scope}|${row.supersedes_record_id}`, entry);
+    // Superseded originals are removed when the correction arrives and refused if they arrive later.
+    if (typeof row.supersedes_record_id === 'string') {
+      const target = `${scope}|${row.supersedes_record_id}`;
+      put(journal.superseded, target, entry);
+      for (const map of [journal.deals, journal.incidents])
+        for (const [key, old] of map) if (`${old.scope}|${old.row.record_id}` === target) map.delete(key);
+    }
+    if (journal.superseded.has(`${scope}|${row.record_id}`)) continue;
     const logical = row.quality?.correction_policy === 'VERSIONED_BY_PAYLOAD_HASH' && typeof row.payload?.logical_record_id === 'string'
       ? row.payload.logical_record_id : row.record_id;
     const key = `${scope}|${row.record_type}|${logical}`;
@@ -61,24 +70,35 @@ async function read(journal, fetchPage, budget) {
   return false;
 }
 
-// A failed pull never discards the last journal. An expired cursor (HTTP 410) or repeated
-// failures while the account refresh works lead to a reread from cursor 0 into a separate
-// journal that replaces the old one only when that reread succeeds.
+// Incremental pages are staged on a copy that becomes the accepted journal only when the
+// pull succeeds; a failure leaves the accepted journal and its pull time unchanged. A pull
+// that uses its whole budget is accepted as incomplete (complete=false) and continues next
+// time. An expired cursor (HTTP 410) or repeated failures start a reread from cursor 0 in a
+// separate recovery journal, kept across refreshes, that replaces the accepted journal only
+// once it has reached the end of the stream.
 export async function pullEvents(store, fetchPage, clock = Date.now) {
   const budget = { left: EVENT_LIMITS.pages };
-  try {
-    await read(store.journal, fetchPage, budget);
-    store.journal.pulledAt = clock();
-    store.failed = false; store.failures = 0; store.lastError = null;
-    return;
-  } catch (error) {
-    store.failed = true; store.failures++; store.lastError = clock();
-    if (store.journal.cursor === '0' || (error?.status !== 410 && store.failures < EVENT_LIMITS.failuresBeforeReread) || budget.left <= 0) throw error;
+  if (!store.recovery) {
+    const next = staged(store.journal);
+    try {
+      next.complete = await read(next, fetchPage, budget);
+      next.pulledAt = clock();
+      store.journal = next;
+      store.failed = false; store.failures = 0; store.lastError = null;
+      return;
+    } catch (error) {
+      store.failed = true; store.failures++; store.lastError = clock();
+      if (store.journal.cursor === '0' || (error?.status !== 410 && store.failures < EVENT_LIMITS.failuresBeforeReread)) throw error;
+      store.recovery = emptyJournal();
+      if (budget.left <= 0) return;
+    }
   }
-  const fresh = emptyJournal();
-  await read(fresh, fetchPage, budget);
-  fresh.pulledAt = clock();
-  store.journal = fresh;
+  try {
+    if (!await read(store.recovery, fetchPage, budget)) return;
+  } catch (error) { store.lastError = clock(); throw error; }
+  store.recovery.complete = true;
+  store.recovery.pulledAt = clock();
+  store.journal = store.recovery; store.recovery = null;
   store.failed = false; store.failures = 0; store.lastError = null;
 }
 
@@ -94,7 +114,7 @@ export function scopedEvents(store, binding, now = Date.now()) {
   return {
     deals: pick(journal?.deals ?? new Map()), incidents: pick(journal?.incidents ?? new Map()),
     health: heartbeat && live(heartbeat) ? heartbeat.row : null,
-    state: journal?.pulledAt ? (store.failed ? 'STALE' : 'AVAILABLE') : (store?.failed ? 'FAILED' : 'LOADING'),
+    state: journal?.pulledAt ? (store.failed ? 'STALE' : journal.complete ? 'AVAILABLE' : 'PARTIAL') : (store?.failed ? 'FAILED' : 'LOADING'),
     pulledAt: journal?.pulledAt ? new Date(journal.pulledAt).toISOString() : null,
   };
 }

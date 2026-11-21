@@ -92,7 +92,7 @@ test('correction contract: supersession and payload-hash versions count once (F0
  const replaced=deal(9,'31',1,1,'0.1','2','50',2);
  const replacement={...deal(9,'31',1,1,'0.1','2','5',2),record_id:'forward-deal-9b',supersedes_record_id:'forward-deal-9'};
  ingest(store.journal,observations([deal(1,'30',0,0,'0.1','1','0',1),first,second,deal(8,'31',0,0,'0.1','1','0',1),replaced,replacement]));
- store.journal.pulledAt=now;
+ store.journal.pulledAt=now;store.journal.complete=true;
  const rows=positionHistory(payloads(scopedEvents(store,binding,now).deals));
  assert.deepEqual(rows.map(r=>[r.id,r.net]).sort(),[['30','2.84'],['31','4.84']]);
 });
@@ -100,7 +100,7 @@ test('correction contract: supersession and payload-hash versions count once (F0
 test('retention, heartbeat bounds, deployments and large cursors (F007, F008, F009, F011)',()=>{
  const store=createEventStore();
  ingest(store.journal,observations([deal(1,'10',0,0,'0.01','1','0',1,{observed_at_utc:at(-8*86400)}),original('incident_event','i-old',{code:'X'},{observed_at_utc:at(-8*86400)})]));
- store.journal.pulledAt=now;
+ store.journal.pulledAt=now;store.journal.complete=true;
  assert.equal(scopedEvents(store,binding,now).deals.length,0);assert.equal(scopedEvents(store,binding,now).incidents.length,0);
  ingest(store.journal,Array.from({length:EVENT_LIMITS.heartbeats+10},(_,i)=>({cursor:String(1000+i),original:original('telemetry_health',`h${i}`,{source_state:'RUNNING'},{account_key:`a${i}`})})));
  assert.equal(store.journal.heartbeats.size,EVENT_LIMITS.heartbeats);
@@ -128,7 +128,7 @@ test('fleet model shows native day result, floating result, heartbeat state, iss
   original('telemetry_health','h1',{source_state:'RUNNING'},{observed_at_utc:at(-30)}),
   original('incident_event','i1',{severity:'WARNING',code:'ENTRY_REFUSED',member:3,symbol:'GBPUSD',detail:'x',suppressed_repeats:2},{observed_at_utc:at(-120)}),
   original('incident_event','i2',{severity:'INFO',code:'OWN_POSITION_ADOPTED',detail:'y'},{observed_at_utc:at(-20)})]));
- store.journal.pulledAt=now;
+ store.journal.pulledAt=now;store.journal.complete=true;
  const account={...scope,observed_at:at(-30),position_mode:'HEDGING',account:{equity:'80738.470000000001',profit:'241.71000000000001',day_start_equity:'80496.76',currency:'EUR'},
   positions:[{payload:{symbol:'XAUUSD',position_id:'5',side:'BUY',volume:'0.03',price_open:'4402.7',price_current:'4410.5',sl:'4380',tp:'4450',profit:'23.4',stop_risk:'67.5',owner:{status:'BOUND',revision:'r1'}}}]};
  const bundle={desk:{accounts:[account]},health:{host_id:'vps',windows:[]}};
@@ -159,4 +159,40 @@ test('production reader pulls events beside the account refresh without delaying
  release();await new Promise(r=>setTimeout(r,5));
  const second=await reader([host]);
  assert.equal(second.hosts[0].fleets[0].eventsState,'AVAILABLE');assert.equal(second.hosts[0].fleets[0].history.length,1);
+});
+
+test('a pull whose later page fails leaves the accepted journal untouched (F001)',async()=>{
+ const store=createEventStore();
+ await pullEvents(store,async()=>({observations:observations([deal(1,'10',0,0,'0.01','1','0',1)]),next_cursor:'7'}),()=>now);
+ await pullEvents(store,async()=>({observations:[],next_cursor:'7'}),()=>now);
+ const before=store.journal;
+ const correction={...deal(1,'10',0,0,'0.01','1','0',1),record_id:'fix-1',supersedes_record_id:'forward-deal-1'};
+ await assert.rejects(pullEvents(store,async after=>{if(after==='7')return {observations:observations([correction,deal(5,'11',0,0,'0.01','1','0',1)]),next_cursor:'9'};throw new Error('down');},()=>now+1000));
+ assert.equal(store.journal,before);assert.equal(store.journal.cursor,'7');assert.equal(store.journal.pulledAt,now);
+ assert.deepEqual(scopedEvents(store,binding,now).deals.map(d=>d.record_id),['forward-deal-1']);
+});
+
+test('trimming supersession markers never resurrects a superseded original (F002)',()=>{
+ const store=createEventStore();
+ ingest(store.journal,observations([deal(1,'10',0,0,'0.01','1','0',1),{...deal(1,'10',0,0,'0.01','1','0',1),record_id:'fix-1',supersedes_record_id:'forward-deal-1'}]));
+ ingest(store.journal,observations(Array.from({length:EVENT_LIMITS.superseded+5},(_,i)=>original('incident_event',`c${i}`,{code:'X'},{supersedes_record_id:`gone-${i}`}))));
+ store.journal.pulledAt=now;store.journal.complete=true;
+ assert.deepEqual(scopedEvents(store,binding,now).deals.map(d=>d.record_id),['fix-1']);
+});
+
+test('budget exhaustion is reported as partial; a reread replaces the journal only once complete (F015)',async()=>{
+ const initial=createEventStore();let cursor=0n;
+ await pullEvents(initial,async()=>{cursor+=1n;return {observations:[],next_cursor:cursor.toString()};},()=>now);
+ assert.equal(scopedEvents(initial,binding,now).state,'PARTIAL');
+ const store=createEventStore();
+ await pullEvents(store,async()=>({observations:observations([deal(1,'10',0,0,'0.01','1','0',1)]),next_cursor:'7'}),()=>now);
+ await pullEvents(store,async()=>({observations:[],next_cursor:'7'}),()=>now);
+ const accepted=store.journal;cursor=100n;
+ const gone=async after=>{if(after==='7')throw Object.assign(new Error('gone'),{status:410});cursor+=1n;return {observations:[],next_cursor:cursor.toString()};};
+ await pullEvents(store,gone,()=>now);
+ assert.equal(store.journal,accepted);assert.notEqual(store.recovery,null);assert.equal(scopedEvents(store,binding,now).state,'STALE');
+ assert.equal(scopedEvents(store,binding,now).deals.length,1);
+ await pullEvents(store,async after=>({observations:[],next_cursor:after}),()=>now+5000);
+ assert.equal(store.recovery,null);assert.notEqual(store.journal,accepted);assert.equal(scopedEvents(store,binding,now).state,'AVAILABLE');
+ assert.equal(scopedEvents(store,binding,now).deals.length,0);
 });

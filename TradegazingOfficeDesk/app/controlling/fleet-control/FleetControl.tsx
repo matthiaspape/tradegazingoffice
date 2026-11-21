@@ -104,6 +104,7 @@ export default function FleetControl({vpsId,fleetId}:{vpsId?:string;fleetId?:str
  // Event journal state: loading, failed without data, or data (possibly stale) with its pull time.
  const journal=(f:Fleet,content:()=>ReactNode)=>f.eventsState==='AVAILABLE'?content()
   :f.eventsState==='STALE'?<><p className="fc-notice">Ereignisabruf fehlgeschlagen · zuletzt empfangen {stamp(f.eventsPulledAt??null)}</p>{content()}</>
+  :f.eventsState==='PARTIAL'?<><p className="fc-notice">Ereignisjournal wird noch nachgeladen · bisher bis {stamp(f.eventsPulledAt??null)}; ältere Einträge können fehlen.</p>{content()}</>
   :f.eventsState==='FAILED'?<p className="fc-notice">Ereignisabruf fehlgeschlagen; noch kein Journal empfangen. Neuer Versuch beim nächsten Abruf.</p>
   :<p className="fc-empty">Ereignisjournal wird geladen …</p>;
  const table=(headers:string[],rows:ReactNode[][])=>rows.length?<div className="fc-table"><table><thead><tr>{headers.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table></div>:<p className="fc-empty">Noch keine belegten Daten für diesen Bereich.</p>;

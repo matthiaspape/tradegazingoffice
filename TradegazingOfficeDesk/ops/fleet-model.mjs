@@ -138,6 +138,7 @@ export function fleetModel(binding, accounts, host, now, offline, store) {
       ...(a && nativeDecimal(payload.day_start_equity) === null ? ['Tagesbasis vom EA noch nicht gemeldet (ab NOVA V10.3)'] : []),
       ...(events.state === 'FAILED' ? ['Ereignisabruf fehlgeschlagen; noch kein Ereignisjournal empfangen'] : []),
       ...(events.state === 'STALE' ? ['Ereignisabruf fehlgeschlagen; Historie und Issues zeigen den zuletzt empfangenen Stand'] : []),
+      ...(events.state === 'PARTIAL' ? ['Ereignisjournal wird noch nachgeladen; Historie und Issues können unvollständig sein'] : []),
       ...(a?.attention ? items(a.attention).filter(v=>typeof v==='string').map(text) : [])],
     positionMode: text(a?.position_mode),
     variants: items(a?.variants).map(r=>({symbol:text(r.payload?.symbol),timeframe:numeric(r.payload?.timeframe_minutes),pool:text(r.payload?.pool),revision:text(r.payload?.revision),ready:typeof r.payload?.ready==='boolean'?r.payload.ready:null})),
