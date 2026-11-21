@@ -32,27 +32,36 @@ export function nativeDecimal(value) {
   if (!Number.isFinite(n) || Math.abs(n) >= 1e15) return null;
   return decimal(n.toFixed(8).replace(/\.?0+$/, '').replace(/^-0$/, '0'));
 }
-const brokerStamp = value => { const n = numeric(value); return n !== null && n > 0 ? new Date(n).toISOString().replace('Z', '') : null; };
-// Closed hedging cycles from native deal events: entries (0) against exits (1, 3) of one position.
-export function positionHistory(deals) {
-  const groups = new Map();
+const brokerStamp = value => {
+  const n = numeric(value), date = n !== null && n > 0 ? new Date(n) : null;
+  return date && Number.isFinite(date.getTime()) ? date.toISOString().replace('Z', '') : null;
+};
+// Closed hedging cycles from native deal events: entries (0) against exits (1, 3) of one
+// position. Only for an evidenced HEDGING account; any other deal of a position (reversal,
+// unknown entry or side, missing volume) disqualifies that position instead of being skipped.
+export function positionHistory(deals, positionMode = 'HEDGING') {
+  if (positionMode !== 'HEDGING') return [];
+  const groups = new Map(), invalid = new Set();
   for (const r of deals) {
     const p = r.payload ?? {};
-    if (!nativeDecimal(p.volume) || ![0, 1].includes(p.type) || ![0, 1, 3].includes(p.entry) || typeof p.position_id !== 'string') continue;
+    if (typeof p.position_id !== 'string') continue;
+    if (!nativeDecimal(p.volume) || ![0, 1].includes(p.type) || ![0, 1, 3].includes(p.entry)) { invalid.add(p.position_id); continue; }
     if (!groups.has(p.position_id)) groups.set(p.position_id, []);
     groups.get(p.position_id).push(p);
   }
+  for (const id of invalid) groups.delete(id);
   const rows = [];
   for (const [id, list] of groups) {
     list.sort((a, b) => (numeric(a.broker_time_msc) ?? 0) - (numeric(b.broker_time_msc) ?? 0));
     const ins = list.filter(p => p.entry === 0), outs = list.filter(p => p.entry !== 0);
     const vol = rows => sum(rows.map(p => nativeDecimal(p.volume)));
     if (!ins.length || !outs.length || vol(ins) === null || vol(ins) !== vol(outs)) continue;
-    const costs = list.flatMap(p => [p.profit, p.commission, p.swap, p.fee].map(v => v === undefined || v === null ? '0' : nativeDecimal(v)));
+    // Every monetary component must be evidenced; a missing one leaves the net unknown.
+    const costs = list.flatMap(p => [p.profit, p.commission, p.swap, p.fee].map(nativeDecimal));
     rows.push({ id, symbol: text(ins[0].symbol), side: ins[0].type === 0 ? 'BUY' : 'SELL', volume: vol(ins),
       openedAt: brokerStamp(ins[0].broker_time_msc), closedAt: brokerStamp(outs.at(-1).broker_time_msc),
       openPrice: nativeDecimal(ins[0].price), closePrice: nativeDecimal(outs.at(-1).price),
-      net: sum(costs), revision: text(ins[0].owner?.revision) });
+      net: costs.includes(null) ? null : sum(costs), revision: text(ins[0].owner?.revision) });
   }
   return rows.sort((a, b) => (b.closedAt ?? '').localeCompare(a.closedAt ?? '')).slice(0, 500);
 }
@@ -112,7 +121,7 @@ export function fleetModel(binding, accounts, host, now, offline, store) {
   const series = items(a?.series).filter(p => epoch(p.at) !== null && epoch(p.at) <= now && epoch(p.at) >= now - 7 * 86400000 && decimal(p.value) !== null)
     .map(p => ({at:p.at, value:p.value})).sort((a,b)=>epoch(a.at)-epoch(b.at));
   const payload = a?.account ?? {};
-  const events = scopedEvents(store, binding);
+  const events = scopedEvents(store, binding, now);
   const sourceState = text(events.health?.payload?.source_state);
   const healthCurrent = freshness(events.health?.observed_at_utc, now, freshSeconds) === 'CURRENT';
   return {
@@ -127,7 +136,8 @@ export function fleetModel(binding, accounts, host, now, offline, store) {
     status: sourceState && healthCurrent ? sourceState : 'Unbekannt',
     reasons: [...(matches.length > 1 ? ['Widersprüchliche Kontobindung'] : !a ? ['Noch keine passende EA-Exportquelle'] : []),
       ...(a && nativeDecimal(payload.day_start_equity) === null ? ['Tagesbasis vom EA noch nicht gemeldet (ab NOVA V10.3)'] : []),
-      ...(events.failed ? ['Ereignisabruf fehlgeschlagen; Historie und Issues zeigen den letzten empfangenen Stand'] : []),
+      ...(events.state === 'FAILED' ? ['Ereignisabruf fehlgeschlagen; noch kein Ereignisjournal empfangen'] : []),
+      ...(events.state === 'STALE' ? ['Ereignisabruf fehlgeschlagen; Historie und Issues zeigen den zuletzt empfangenen Stand'] : []),
       ...(a?.attention ? items(a.attention).filter(v=>typeof v==='string').map(text) : [])],
     positionMode: text(a?.position_mode),
     variants: items(a?.variants).map(r=>({symbol:text(r.payload?.symbol),timeframe:numeric(r.payload?.timeframe_minutes),pool:text(r.payload?.pool),revision:text(r.payload?.revision),ready:typeof r.payload?.ready==='boolean'?r.payload.ready:null})),
@@ -136,8 +146,8 @@ export function fleetModel(binding, accounts, host, now, offline, store) {
       openPrice:decimal(r.payload?.price_open),currentPrice:decimal(r.payload?.price_current),sl:decimal(r.payload?.sl),tp:decimal(r.payload?.tp),
       profit:decimal(r.payload?.profit),swap:decimal(r.payload?.swap),stopRisk:decimal(r.payload?.stop_risk),
       owner:text(r.payload?.owner?.status),revision:text(r.payload?.owner?.revision)})),
-    eventsAvailable: events.available,
-    history: positionHistory(events.deals),
+    eventsState: events.state, eventsPulledAt: events.pulledAt,
+    history: positionHistory(events.deals, text(a?.position_mode)),
     issues: events.incidents.map(r=>({at:r.observed_at_utc??null,severity:text(r.payload?.severity),code:text(r.payload?.code),symbol:text(r.payload?.symbol),
       member:numeric(r.payload?.member),detail:text(r.payload?.detail),repeats:numeric(r.payload?.suppressed_repeats)}))
       .sort((x,y)=>(epoch(y.at)??0)-(epoch(x.at)??0)).slice(0,200),

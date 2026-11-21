@@ -39,7 +39,7 @@ export function loadSources() {
 }
 export async function fetchJson(url, token, fetcher) {
   const response = await fetcher(url, {headers:{Authorization:`Bearer ${token}`}, redirect:'error', signal:AbortSignal.timeout(45000)});
-  if (!response.ok) throw new Error('Reader unavailable');
+  if (!response.ok) { const error=new Error('Reader unavailable'); error.status=response.status; throw error; }
   const reader = response.body.getReader();
   const chunks=[]; let size=0;
   try {

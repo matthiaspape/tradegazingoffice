@@ -19,7 +19,7 @@ export function demoOverview(): Overview {
    series:Array.from({length:13},(_,n)=>({at:new Date(Date.parse(observedAt)-(12-n)*300000-(n<6&&i===2?300000:0)).toISOString(),value:n===12?values[1]:(Number(values[1])+(n-12)*24+Math.sin(n)*35).toFixed(2)})),
    reasons:i===2?['Letzter Fehlerstatus um 11:25. Aktueller Betrieb unbekannt; Quelle veraltet.']:['Fiktives Beispiel · kein nativer Flottenexport'],
    variants:source.variants.map(v=>({symbol:v.symbol,timeframe:null,pool:v.pool,revision:v.revision,ready:true})),
-   pools:source.sample.pools.map(p=>({name:p.name,used:String(p.used),capacity:String(p.capacity)})),positions:[],eventsAvailable:true,history:[],issues:[]};
+   pools:source.sample.pools.map(p=>({name:p.name,used:String(p.used),capacity:String(p.capacity)})),positions:[],eventsState:'AVAILABLE',eventsPulledAt:null,history:[],issues:[]};
   h.fleets.push(f);
  });
  return {mode:'DEMO',asOf,hosts};

@@ -9,7 +9,7 @@ export type Fleet = {
  pools:{name:string;used:string|null;capacity:string|null}[];
  positions:{symbol:string;id:string;side?:string;volume:string|null;openPrice?:string|null;currentPrice?:string|null;sl:string|null;tp:string|null;
   profit?:string|null;swap?:string|null;stopRisk?:string|null;owner?:string;revision?:string}[];
- eventsAvailable?:boolean;
+ eventsState?:'LOADING'|'FAILED'|'STALE'|'AVAILABLE';eventsPulledAt?:string|null;
  history?:{id:string;symbol:string;side:string;volume:string|null;openedAt:string|null;closedAt:string|null;openPrice:string|null;closePrice:string|null;net:string|null;revision:string}[];
  issues?:{at:string|null;severity:string;code:string;symbol:string;member:number|null;detail:string;repeats:number|null}[];
 };
