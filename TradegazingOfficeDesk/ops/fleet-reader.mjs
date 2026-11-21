@@ -3,6 +3,7 @@ import { resolve, isAbsolute } from 'node:path';
 import { deskHome } from './config.mjs';
 import { DeskError } from './contract.mjs';
 import { projectHost } from './fleet-model.mjs';
+import { createEventStore, pullEvents, EVENT_LIMITS } from './fleet-events.mjs';
 import { REFRESH_WAIT_MS } from './fleet-timing.mjs';
 
 const entries = new Map();
@@ -54,14 +55,14 @@ async function waitBriefly(pending, milliseconds) {
   try { await Promise.race([pending,new Promise(resolve=>{timer=setTimeout(resolve,milliseconds);})]); }
   finally { clearTimeout(timer); }
 }
-export function createReader({fetcher=fetch, clock=Date.now, cache=new Map(), refreshWaitMs=REFRESH_WAIT_MS, readToken=path=>{
+export function createReader({fetcher=fetch, clock=Date.now, cache=new Map(), refreshWaitMs=REFRESH_WAIT_MS, events=false, readToken=path=>{
   const stat=lstatSync(path); if(!stat.isFile() || (stat.mode&0o077))throw new Error('Private token required');
   return readFileSync(path,'utf8').trim();
 }}={}) {
   async function read(host) {
     const signature=JSON.stringify(host), now=clock();
     let entry=cache.get(host.id);
-    if (!entry || entry.signature!==signature) { entry={signature,value:null,at:0,attempt:null,pending:null,failed:false};cache.set(host.id,entry); }
+    if (!entry || entry.signature!==signature) { entry={signature,value:null,at:0,attempt:null,pending:null,failed:false,events:createEventStore(),eventsPending:null};cache.set(host.id,entry); }
     if(entry.value && now-entry.at>7*86400000)entry.value=null;
     async function refresh() {
       entry.attempt=clock();
@@ -74,6 +75,13 @@ export function createReader({fetcher=fetch, clock=Date.now, cache=new Map(), re
         ]);
         if(health.host_id!==host.native_host_id || !Array.isArray(desk.accounts))throw new Error('Identity/shape mismatch');
         entry.value={desk,health};entry.at=clock();entry.failed=false;
+        // Deal, incident and heartbeat history runs beside the account refresh and never delays it.
+        // A failed pull keeps the last received journal and is retried with the next refresh.
+        if(events && !entry.eventsPending) {
+          const store=entry.events;
+          entry.eventsPending=pullEvents(store, after=>fetchJson(new URL(`/v1/events?after=${after}&limit=${EVENT_LIMITS.page}`,host.endpoint),token,fetcher), clock)
+            .catch(()=>{store.failed=true;}).finally(()=>{entry.eventsPending=null;});
+        }
       } catch { entry.failed=true; }
       finally { entry.pending=null; }
     }
@@ -86,12 +94,12 @@ export function createReader({fetcher=fetch, clock=Date.now, cache=new Map(), re
       if(!entry.value)await entry.pending;
       else await waitBriefly(entry.pending,refreshWaitMs);
     }
-    return {host:projectHost(host,entry.value,clock(),{failed:entry.failed}),refreshing:entry.pending!==null};
+    return {host:projectHost(host,entry.value,clock(),{failed:entry.failed},entry.events),refreshing:entry.pending!==null};
   }
   return async hosts=>{
     const results=await Promise.all(hosts.map(read));
     return {mode:'NATIVE',asOf:new Date(clock()).toISOString(),hosts:results.map(r=>r.host),refreshing:results.some(r=>r.refreshing)};
   };
 }
-const reader=createReader({cache:entries});
+const reader=createReader({cache:entries, events:true});
 export const fleetOverview = () => reader(loadSources());

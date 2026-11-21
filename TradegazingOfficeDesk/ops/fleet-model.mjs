@@ -1,9 +1,61 @@
-// M650 read-model adapter. Money is passed through as decimal strings, never calculated here.
+// M650 read-model adapter. Money stays a decimal string; sums and differences use exact
+// fixed-point arithmetic (12 places), never floating point.
 import { HEALTH_FRESH_SECONDS, ACCOUNT_FRESH_SECONDS } from './fleet-timing.mjs';
+import { scopedEvents } from './fleet-events.mjs';
 export const items = value => Array.isArray(value) ? value : value && typeof value === 'object' ? [value] : [];
 const text = value => typeof value === 'string' ? value.slice(0, 500) : '';
 const numeric = value => value !== null && value !== '' && ['number','string'].includes(typeof value) && Number.isFinite(Number(value)) ? Number(value) : null;
 export const decimal = value => typeof value === 'string' && /^-?\d{1,24}(?:\.\d{1,12})?$/.test(value) ? value : null;
+const SCALE = 10n ** 12n;
+function fixed(value) {
+  const v = decimal(value); if (v === null) return null;
+  const negative = v.startsWith('-'), [whole, fraction = ''] = v.replace('-', '').split('.');
+  const n = BigInt(whole) * SCALE + BigInt((fraction + '0'.repeat(12)).slice(0, 12));
+  return negative ? -n : n;
+}
+function plain(n) {
+  if (n === null) return null;
+  const negative = n < 0n, a = negative ? -n : n;
+  const fraction = (a % SCALE).toString().padStart(12, '0').replace(/0+$/, '');
+  return `${negative && a !== 0n ? '-' : ''}${a / SCALE}${fraction ? '.' + fraction : ''}`;
+}
+export function sum(values) {
+  let total = 0n;
+  for (const v of values) { const n = fixed(v); if (n === null) return null; total += n; }
+  return plain(total);
+}
+export const difference = (a, b) => { const x = fixed(a), y = fixed(b); return x === null || y === null ? null : plain(x - y); };
+// Native MT5 doubles arrive as %.17g text (e.g. "0.029999999999999999"); round to 8 places.
+export function nativeDecimal(value) {
+  if (typeof value !== 'string' || !/^-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?$/.test(value)) return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || Math.abs(n) >= 1e15) return null;
+  return decimal(n.toFixed(8).replace(/\.?0+$/, '').replace(/^-0$/, '0'));
+}
+const brokerStamp = value => { const n = numeric(value); return n !== null && n > 0 ? new Date(n).toISOString().replace('Z', '') : null; };
+// Closed hedging cycles from native deal events: entries (0) against exits (1, 3) of one position.
+export function positionHistory(deals) {
+  const groups = new Map();
+  for (const r of deals) {
+    const p = r.payload ?? {};
+    if (!nativeDecimal(p.volume) || ![0, 1].includes(p.type) || ![0, 1, 3].includes(p.entry) || typeof p.position_id !== 'string') continue;
+    if (!groups.has(p.position_id)) groups.set(p.position_id, []);
+    groups.get(p.position_id).push(p);
+  }
+  const rows = [];
+  for (const [id, list] of groups) {
+    list.sort((a, b) => (numeric(a.broker_time_msc) ?? 0) - (numeric(b.broker_time_msc) ?? 0));
+    const ins = list.filter(p => p.entry === 0), outs = list.filter(p => p.entry !== 0);
+    const vol = rows => sum(rows.map(p => nativeDecimal(p.volume)));
+    if (!ins.length || !outs.length || vol(ins) === null || vol(ins) !== vol(outs)) continue;
+    const costs = list.flatMap(p => [p.profit, p.commission, p.swap, p.fee].map(v => v === undefined || v === null ? '0' : nativeDecimal(v)));
+    rows.push({ id, symbol: text(ins[0].symbol), side: ins[0].type === 0 ? 'BUY' : 'SELL', volume: vol(ins),
+      openedAt: brokerStamp(ins[0].broker_time_msc), closedAt: brokerStamp(outs.at(-1).broker_time_msc),
+      openPrice: nativeDecimal(ins[0].price), closePrice: nativeDecimal(outs.at(-1).price),
+      net: sum(costs), revision: text(ins[0].owner?.revision) });
+  }
+  return rows.sort((a, b) => (b.closedAt ?? '').localeCompare(a.closedAt ?? '')).slice(0, 500);
+}
 export const epoch = value => typeof value === 'string' && Number.isFinite(Date.parse(value)) ? Date.parse(value) : null;
 export function freshness(at, now, seconds) {
   const time = epoch(at);
@@ -52,7 +104,7 @@ function accountMatch(a, b) {
   return a.account_key === b.account_key && a.environment === b.environment && (a.run_id ?? null) === (b.run_id ?? null)
     && (a.deployment_id === b.deployment_id || items(a.fleet).some(r => r.deployment_id === b.deployment_id));
 }
-export function fleetModel(binding, accounts, host, now, offline) {
+export function fleetModel(binding, accounts, host, now, offline, store) {
   const matches = items(accounts).filter(a => accountMatch(a, binding));
   const a = matches.length === 1 ? matches[0] : null;
   const freshSeconds = Math.max(host.fresh_seconds, ACCOUNT_FRESH_SECONDS);
@@ -60,6 +112,9 @@ export function fleetModel(binding, accounts, host, now, offline) {
   const series = items(a?.series).filter(p => epoch(p.at) !== null && epoch(p.at) <= now && epoch(p.at) >= now - 7 * 86400000 && decimal(p.value) !== null)
     .map(p => ({at:p.at, value:p.value})).sort((a,b)=>epoch(a.at)-epoch(b.at));
   const payload = a?.account ?? {};
+  const events = scopedEvents(store, binding);
+  const sourceState = text(events.health?.payload?.source_state);
+  const healthCurrent = freshness(events.health?.observed_at_utc, now, freshSeconds) === 'CURRENT';
   return {
     id: `${host.id}.${binding.id}`, hostId: host.id, name: binding.name, broker: binding.broker,
     subtitle: binding.subtitle?.trim(),
@@ -67,17 +122,28 @@ export function fleetModel(binding, accounts, host, now, offline) {
     observedAt: a?.observed_at ?? null, freshSeconds, state: offline && state === 'CURRENT' ? 'STALE' : state,
     sharedAccount: host.bindings.filter(b => b.account_key === binding.account_key && b.environment === binding.environment && (b.run_id ?? null) === (binding.run_id ?? null)).length > 1,
     balance: decimal(payload.balance), equity: decimal(payload.equity), series,
-    // The current M650 projection does not qualify a day boundary or an overall EA operating state.
-    profitToday: null, unrealized: null, status: 'Unbekannt',
-    reasons: [matches.length > 1 ? 'Widersprüchliche Kontobindung' : !a ? 'Noch keine passende EA-Exportquelle' : 'Tagesnetto, vollständige offene Bewertung und EA-Gesamtstatus sind im Reader noch nicht qualifiziert',
+    // Day base and floating result are the EA's native values (V10.3+); status is its own heartbeat state.
+    profitToday: difference(nativeDecimal(payload.equity), nativeDecimal(payload.day_start_equity)), unrealized: nativeDecimal(payload.profit),
+    status: sourceState && healthCurrent ? sourceState : 'Unbekannt',
+    reasons: [...(matches.length > 1 ? ['Widersprüchliche Kontobindung'] : !a ? ['Noch keine passende EA-Exportquelle'] : []),
+      ...(a && nativeDecimal(payload.day_start_equity) === null ? ['Tagesbasis vom EA noch nicht gemeldet (ab NOVA V10.3)'] : []),
+      ...(events.failed ? ['Ereignisabruf fehlgeschlagen; Historie und Issues zeigen den letzten empfangenen Stand'] : []),
       ...(a?.attention ? items(a.attention).filter(v=>typeof v==='string').map(text) : [])],
     positionMode: text(a?.position_mode),
     variants: items(a?.variants).map(r=>({symbol:text(r.payload?.symbol),timeframe:numeric(r.payload?.timeframe_minutes),pool:text(r.payload?.pool),revision:text(r.payload?.revision),ready:typeof r.payload?.ready==='boolean'?r.payload.ready:null})),
     pools: items(a?.pools).map(r=>({name:text(r.payload?.pool),used:decimal(r.payload?.used?.risk),capacity:decimal(r.payload?.capacity?.risk)})),
-    positions: items(a?.positions).map(r=>({symbol:text(r.payload?.symbol),id:text(r.payload?.position_id),volume:decimal(r.payload?.volume),sl:decimal(r.payload?.sl),tp:decimal(r.payload?.tp)})),
+    positions: items(a?.positions).map(r=>({symbol:text(r.payload?.symbol),id:text(r.payload?.position_id),side:text(r.payload?.side),volume:decimal(r.payload?.volume),
+      openPrice:decimal(r.payload?.price_open),currentPrice:decimal(r.payload?.price_current),sl:decimal(r.payload?.sl),tp:decimal(r.payload?.tp),
+      profit:decimal(r.payload?.profit),swap:decimal(r.payload?.swap),stopRisk:decimal(r.payload?.stop_risk),
+      owner:text(r.payload?.owner?.status),revision:text(r.payload?.owner?.revision)})),
+    eventsAvailable: events.available,
+    history: positionHistory(events.deals),
+    issues: events.incidents.map(r=>({at:r.observed_at_utc??null,severity:text(r.payload?.severity),code:text(r.payload?.code),symbol:text(r.payload?.symbol),
+      member:numeric(r.payload?.member),detail:text(r.payload?.detail),repeats:numeric(r.payload?.suppressed_repeats)}))
+      .sort((x,y)=>(epoch(y.at)??0)-(epoch(x.at)??0)).slice(0,200),
   };
 }
-export function projectHost(host, bundle, now, transport = {}) {
+export function projectHost(host, bundle, now, transport = {}, store = null) {
   const valid = bundle?.health?.host_id === host.native_host_id;
   const health = healthModel(valid ? bundle.health : {}, now);
   const offline = !valid || transport.failed === true || bundle?.desk?.connection?.state === 'STALE' || bundle?.health?.connection?.state === 'STALE';
@@ -88,7 +154,7 @@ export function projectHost(host, bundle, now, transport = {}) {
     lastPull: bundle?.health?.connection?.last_success_at ?? null,
     waitingForEa: bundle?.desk?.source_binding_status === 'WAITING_FOR_EA_EXPORTS',
     unboundAccounts: valid ? items(bundle?.desk?.accounts).filter(a=>!host.bindings.some(b=>accountMatch(a,b))).length : 0,
-    fleets: host.bindings.map(b => fleetModel(b, valid ? bundle?.desk?.accounts : [], host, now, offline)),
+    fleets: host.bindings.map(b => fleetModel(b, valid ? bundle?.desk?.accounts : [], host, now, offline, valid ? store : null)),
     issue: !valid ? 'Noch keine erreichbare, passend gebundene Hostquelle' : transport.failed ? 'Backendabruf fehlgeschlagen. Letzter empfangener Stand mit Originalzeiten.' : null,
   };
 }

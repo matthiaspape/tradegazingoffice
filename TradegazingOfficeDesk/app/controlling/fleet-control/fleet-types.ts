@@ -7,7 +7,11 @@ export type Fleet = {
  balance:string|null;equity:string|null;profitToday:string|null;unrealized:string|null;series:Point[];reasons:string[];positionMode:string;
  variants:{symbol:string;timeframe:number|null;pool:string;revision:string;ready:boolean|null}[];
  pools:{name:string;used:string|null;capacity:string|null}[];
- positions:{symbol:string;id:string;volume:string|null;sl:string|null;tp:string|null}[];
+ positions:{symbol:string;id:string;side?:string;volume:string|null;openPrice?:string|null;currentPrice?:string|null;sl:string|null;tp:string|null;
+  profit?:string|null;swap?:string|null;stopRisk?:string|null;owner?:string;revision?:string}[];
+ eventsAvailable?:boolean;
+ history?:{id:string;symbol:string;side:string;volume:string|null;openedAt:string|null;closedAt:string|null;openPrice:string|null;closePrice:string|null;net:string|null;revision:string}[];
+ issues?:{at:string|null;severity:string;code:string;symbol:string;member:number|null;detail:string;repeats:number|null}[];
 };
 export type Host = {
  id:string;name:string;ip:string|null;observedAt:string|null;state:string;connection:string;lastPull:string|null;issue:string|null;
