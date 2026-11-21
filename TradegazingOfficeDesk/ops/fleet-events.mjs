@@ -16,7 +16,7 @@ function emptyJournal() {
 const staged = j => ({ ...j, deals: new Map(j.deals), incidents: new Map(j.incidents), heartbeats: new Map(j.heartbeats), superseded: new Map(j.superseded) });
 // journal: accepted state shown by the desk; recovery: a reread from cursor 0 in progress.
 export function createEventStore() {
-  return { journal: emptyJournal(), recovery: null, failed: false, failures: 0, lastError: null };
+  return { journal: emptyJournal(), recovery: null, failed: false, failures: 0, recoveryFailures: 0, lastError: null };
 }
 
 // Keeps the newest entries by exact cursor order.
@@ -89,16 +89,24 @@ export async function pullEvents(store, fetchPage, clock = Date.now) {
     } catch (error) {
       store.failed = true; store.failures++; store.lastError = clock();
       if (store.journal.cursor === '0' || (error?.status !== 410 && store.failures < EVENT_LIMITS.failuresBeforeReread)) throw error;
-      store.recovery = emptyJournal();
+      store.recovery = emptyJournal(); store.recoveryFailures = 0;
       if (budget.left <= 0) return;
     }
   }
   try {
-    if (!await read(store.recovery, fetchPage, budget)) return;
-  } catch (error) { store.lastError = clock(); throw error; }
+    if (!await read(store.recovery, fetchPage, budget)) { store.recoveryFailures = 0; return; }
+  } catch (error) {
+    // An expired recovery cursor (410, or repeated failures behind the Mac transport)
+    // restarts the recovery at cursor 0; the accepted journal is kept.
+    store.lastError = clock(); store.recoveryFailures++;
+    if (store.recovery.cursor !== '0' && (error?.status === 410 || store.recoveryFailures >= EVENT_LIMITS.failuresBeforeReread)) {
+      store.recovery = emptyJournal(); store.recoveryFailures = 0;
+    }
+    throw error;
+  }
   store.recovery.complete = true;
   store.recovery.pulledAt = clock();
-  store.journal = store.recovery; store.recovery = null;
+  store.journal = store.recovery; store.recovery = null; store.recoveryFailures = 0;
   store.failed = false; store.failures = 0; store.lastError = null;
 }
 

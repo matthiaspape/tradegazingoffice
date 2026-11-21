@@ -196,3 +196,17 @@ test('budget exhaustion is reported as partial; a reread replaces the journal on
  assert.equal(store.recovery,null);assert.notEqual(store.journal,accepted);assert.equal(scopedEvents(store,binding,now).state,'AVAILABLE');
  assert.equal(scopedEvents(store,binding,now).deals.length,0);
 });
+
+test('an expired recovery cursor restarts the recovery at zero and keeps the accepted journal (F016)',async()=>{
+ const store=createEventStore();
+ await pullEvents(store,async()=>({observations:observations([deal(1,'10',0,0,'0.01','1','0',1)]),next_cursor:'7'}),()=>now);
+ await pullEvents(store,async()=>({observations:[],next_cursor:'7'}),()=>now);
+ const accepted=store.journal;let cursor=100n;
+ await pullEvents(store,async after=>{if(after==='7')throw Object.assign(new Error('gone'),{status:410});cursor+=1n;return {observations:[],next_cursor:cursor.toString()};},()=>now);
+ assert.notEqual(store.recovery.cursor,'0');
+ await assert.rejects(pullEvents(store,async()=>{throw Object.assign(new Error('gone'),{status:410});},()=>now));
+ assert.equal(store.recovery.cursor,'0');assert.equal(store.journal,accepted);
+ cursor=200n;await pullEvents(store,async()=>{cursor+=1n;return {observations:[],next_cursor:cursor.toString()};},()=>now);
+ for(let i=0;i<EVENT_LIMITS.failuresBeforeReread;i++)await assert.rejects(pullEvents(store,async()=>{throw new Error('503');},()=>now));
+ assert.equal(store.recovery.cursor,'0');assert.equal(store.journal,accepted);assert.equal(scopedEvents(store,binding,now).deals.length,1);
+});
