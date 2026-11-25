@@ -1,6 +1,6 @@
 --- a/fleet_desk/mac_desk.py
 +++ b/fleet_desk/mac_desk.py
-@@ -18,2 +18,31 @@
+@@ -18,2 +18,52 @@
  
 +# Only the current Health GET adds metadata from the existing authenticated SSH identity.
 +# Send PID, native start time and the path-derived number without the executable path.
@@ -17,36 +17,63 @@
 +} catch {
 +    $slots=@()
 +}
-+[Console]::WriteLine((ConvertTo-Json -InputObject $slots -Compress))
++[Console]::WriteLine()
++[Console]::WriteLine(('FLEET_MT5_SLOTS ' + (ConvertTo-Json -InputObject $slots -Compress)))
 +'''
 +
 +
++def process_identity(process):
++    if (isinstance(process, dict) and type(process.get('pid')) is int
++            and isinstance(process.get('started_at'), str)):
++        return process['pid'], process['started_at']
++    return None
++
++
 +def apply_current_slots(health, metadata):
-+    slots = {(p['pid'], p['started_at']): p['slot'] for p in metadata}
-+    for window in health.get('windows', []):
-+        for process in window.get('last', {}).get('processes', []):
-+            slot = slots.get((process.get('pid'), process.get('started_at')))
++    if not isinstance(metadata, list) or not isinstance(health, dict):
++        return health
++    windows = health.get('windows')
++    if not isinstance(windows, list):
++        return health
++    slots = {}
++    for row in metadata:
++        identity = process_identity(row)
++        if identity is not None and type(row.get('slot')) is int and row['slot'] > 0:
++            slots[identity] = row['slot']
++    for window in windows:
++        last = window.get('last') if isinstance(window, dict) else None
++        processes = last.get('processes') if isinstance(last, dict) else None
++        if not isinstance(processes, list):
++            continue
++        for process in processes:
++            slot = slots.get(process_identity(process))
 +            if slot is not None:
 +                process['mt5_slot'] = slot
 +    return health
 +
 +
  class VpsUnavailable(OSError):
-@@ -34,2 +63,3 @@
+@@ -34,2 +84,3 @@
          direct = endpoint and endpoint.startswith(('/v1/current?', '/v1/history?'))
 +        include_slots = endpoint == '/v1/current?part=health'
          # Both the bearer key and the script go through encrypted SSH stdin,
-@@ -48,2 +78,4 @@
-             script += "$reply=Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:8765"+endpoint+"' -Headers $headers -TimeoutSec "+str(timeout)+"\n"
+@@ -49,2 +100,4 @@
+             script += "[Console]::Write($reply.Content)\n"
 +            if include_slots:
 +                script += MT5_SLOT_METADATA
-             script += "[Console]::Write($reply.Content)\n"
-@@ -60,3 +92,7 @@
+         else:
+@@ -60,3 +113,13 @@
                  input=wrapper.encode(), capture_output=True, timeout=30, check=True)
 -            return json.loads(result.stdout.decode('utf-8-sig'))
 +            output = result.stdout.decode('utf-8-sig')
 +            if include_slots:
-+                metadata, output = output.split('\n', 1)
-+                return apply_current_slots(json.loads(output), json.loads(metadata))
++                health, marker, metadata = output.rpartition('\nFLEET_MT5_SLOTS ')
++                if marker:
++                    result = json.loads(health)
++                    try:
++                        slots = json.loads(metadata)
++                    except ValueError:
++                        return result
++                    return apply_current_slots(result, slots)
 +            return json.loads(output)
          except (OSError, ValueError, subprocess.SubprocessError) as error:
