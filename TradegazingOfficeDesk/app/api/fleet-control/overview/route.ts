@@ -5,6 +5,6 @@ export async function GET(request: Request) {
   return handle(async () => {
     authorize(request);
     if (new URL(request.url).search) return Response.json({error:'Keine Quellparameter erlaubt.'},{status:400});
-    return Response.json(await fleetOverview(),{headers:{'Cache-Control':'no-store'}});
+    return Response.json(await fleetOverview(request.headers.get('x-office-fleet-journal')==='1'),{headers:{'Cache-Control':'no-store'}});
   });
 }

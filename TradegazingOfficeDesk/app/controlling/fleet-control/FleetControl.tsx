@@ -2,6 +2,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import DeskShell from '../../DeskShell';
 import { demoOverview } from './unified-demo';
+import { useFleetHistory } from './useFleetHistory';
 import type { Overview, Host, Fleet, Point } from './fleet-types';
 import { BROWSER_POLL_MS, CATCHUP_DELAY_MS, CATCHUP_LIMIT, HEALTH_FRESH_SECONDS } from '../../../ops/fleet-timing.mjs';
 import './unified.css';
@@ -53,7 +54,7 @@ export default function FleetControl({vpsId,fleetId}:{vpsId?:string;fleetId?:str
    if(!alive||!sessionReady||inFlight)return;
    clearTimeout(retry);inFlight=true;
    try{
-    const r=await fetch('/api/fleet-control/overview',{cache:'no-store'});
+    const r=await fetch('/api/fleet-control/overview',{cache:'no-store',headers:fleetId?{'x-office-fleet-journal':'1'}:{}});
     if(r.status===401){
      sessionReady=false;
      if(alive){setSessionExpired(true);setError('Office-Sitzung abgelaufen. Bitte die Seite neu laden, um die VPS-Daten wieder abzurufen.');setReady(true);}
@@ -73,16 +74,28 @@ export default function FleetControl({vpsId,fleetId}:{vpsId?:string;fleetId?:str
   document.addEventListener('visibilitychange',resume);
   const poll=setInterval(refresh,BROWSER_POLL_MS),tick=setInterval(()=>{setClock(Date.now());setData(previous=>previous&&Date.now()-Date.parse(previous.asOf)>7*86400000?null:previous);},30000);
   return()=>{alive=false;clearTimeout(retry);clearInterval(poll);clearInterval(tick);document.removeEventListener('visibilitychange',resume);};
- },[]);
+ },[fleetId]);
+ const historyHosts=mode==='NATIVE'&&!sessionExpired&&data?.splitHistory
+  ? data.hosts.filter(h=>vpsId?h.id===vpsId:fleetId?h.fleets.some(f=>f.id===fleetId):h.fleets.length>0).map(h=>h.id+':'+h.historyIdentity).sort().join(',')
+  : '';
+ const chartHistory=useFleetHistory(historyHosts,range);
+ const historyFailed=!!chartHistory&&[...chartHistory.values()].some(h=>h.failed);
  const now=mode==='DEMO'&&data?Date.parse(data.asOf):clock;
  const link=(path:string)=>`${path}?mode=${mode==='DEMO'?'demo':'native'}&range=${range}`;
  const fresh=(at:string|null,state:string,limit=HEALTH_FRESH_SECONDS)=>!error&&state==='CURRENT'&&(mode==='DEMO'||!!at&&(now-Date.parse(at)>=0&&now-Date.parse(at)<=limit*1000));
  const healthChip=(h:Host)=><Chip tone={fresh(h.observedAt,h.state)?'good':'warn'}>{fresh(h.observedAt,h.state)?'Health aktuell':'Health fehlt / veraltet'}</Chip>;
  const fleetChip=(f:Fleet)=><Chip tone={fresh(f.observedAt,f.state,f.freshSeconds)?'good':'warn'}>{fresh(f.observedAt,f.state,f.freshSeconds)?'Daten aktuell':'Daten fehlen / veraltet'}</Chip>;
- const detailStatus=(h:Host|undefined,f?:Fleet)=><div role="group" aria-label={f?'Flotten-Datenstatus':'VPS-Datenstatus'}>
+ const historyEquity=(f:Fleet)=>data?.splitHistory
+  ? [...(chartHistory?.get(f.hostId)?.equity.get(f.id)?.values()??[])].sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))
+  : f.series;
+ const detailStatus=(h:Host|undefined,f?:Fleet)=>{
+  const connection=f?(h?.deskConnection??h?.connection):h?.connection;
+  const pull=f?(h?.deskLastPull??h?.lastPull):h?.lastPull;
+  return <div role="group" aria-label={f?'Flotten-Datenstatus':'VPS-Datenstatus'}>
   <div className="fc-badges">{f?fleetChip(f):h?healthChip(h):null}<Chip>Datenquelle: {mode==='DEMO'?'Fiktive Beispieldaten':'VPS-Daten'}</Chip></div>
-  <p className="fc-muted">Verbindung: {sessionExpired?'nicht geprüft (Office-Sitzung abgelaufen)':error?'nicht geprüft (Office-Abruf fehlgeschlagen)':`${mode==='DEMO'?'fiktiv · ':''}${h?.connection==='CURRENT'?'aktuell':h?.connection==='STALE'?'veraltet':'nicht verfügbar'}`} · Letzter Backendabruf {stamp(h?.lastPull??null)}</p>
+  <p className="fc-muted">Verbindung: {sessionExpired?'nicht geprüft (Office-Sitzung abgelaufen)':error?'nicht geprüft (Office-Abruf fehlgeschlagen)':`${mode==='DEMO'?'fiktiv · ':''}${connection==='CURRENT'?'aktuell':connection==='STALE'?'veraltet':'nicht verfügbar'}`} · Letzter Backendabruf {stamp(pull??null)}</p>
  </div>;
+ };
  const fleetCard=(f:Fleet)=><a key={f.id} className="fc-fleet" href={link(`${base}/${encodeURIComponent(f.id)}`)}>
   <div className="fc-fleet-head">
    <div className="fc-fleet-name">
@@ -94,11 +107,13 @@ export default function FleetControl({vpsId,fleetId}:{vpsId?:string;fleetId?:str
   </div>
   {f.sharedAccount&&<p className="fc-muted">Konto gesamt · geteilt · keine Flottensumme</p>}
   <FleetValues fleet={f} current={fresh(f.observedAt,f.state,f.freshSeconds)}/>
-  <Plot points={f.series} label={f.sharedAccount?'Konto-Equity · geteilt':'Konto-Equity'} currency={f.currency} now={now} range={range}/>
+  <Plot points={historyEquity(f)} label={f.sharedAccount?'Konto-Equity · geteilt':'Konto-Equity'} currency={f.currency} now={now} range={range}/>
   <p className="fc-muted">Beobachtet {stamp(f.observedAt)} · Flottendetails öffnen →</p>
  </a>;
  const hostCard=(h:Host)=><section className="fc-vps" key={h.id}><header className="fc-vps-head"><div><h2><a href={link(`/controlling/vps/${encodeURIComponent(h.id)}`)}>{h.name} →</a></h2><p className="fc-ip">IP {h.ip||'nicht hinterlegt'}</p></div>{healthChip(h)}</header><HostValues host={h} current={fresh(h.observedAt,h.state)}/>{h.issue&&<p className="fc-notice">{h.issue}</p>}{h.attention.map((a,i)=><p className="fc-notice" key={i}>{a}</p>)}{h.fleets.length?<div className="fc-fleet-grid">{h.fleets.map(fleetCard)}</div>:<p className="fc-empty">{h.waitingForEa?'Noch keine EA-Exportquellen angebunden. VPS-Health läuft unabhängig.':'Keine gebundenen Flotteneinsätze.'}{h.unboundAccounts>0?` ${h.unboundAccounts} Konten warten auf Flottenzuordnung.`:''}</p>}</section>;
  const host=data?.hosts.find(h=>h.id===vpsId),fleet=data?.hosts.flatMap(h=>h.fleets).find(f=>f.id===fleetId);
+ const healthSeries=host&&(data?.splitHistory?[...(chartHistory?.get(host.id)?.health.values()??[])]
+    .sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)):host.series);
  const detail=vpsId?host?.name:fleetId?fleet?.name:undefined;
  const hostOfFleet=fleet?data?.hosts.find(h=>h.id===fleet.hostId):undefined;
  // Event journal state: loading, failed without data, or data (possibly stale) with its pull time.
@@ -118,14 +133,16 @@ export default function FleetControl({vpsId,fleetId}:{vpsId?:string;fleetId?:str
   <div className="fc-toolbar"><label>Datenquelle<select value={mode} onChange={e=>location.assign(`${base}?mode=${e.target.value==='DEMO'?'demo':'native'}&range=${range}`)}><option value="NATIVE">Vorhandene VPS-Daten</option><option value="DEMO">Fiktive Beispieldaten</option></select></label><label>Beobachtungsfenster<select value={range} onChange={e=>{const v=Number(e.target.value);setRange(v);const q=new URL(location.href);q.searchParams.set('range',String(v));history.replaceState(null,'',q);}}><option value="24">Letzte 24 Stunden</option><option value="168">Bis zu 7 Tage</option></select></label><p>Lesender Abruf alle 5 Minuten · Europe/Berlin</p></div>
   {mode==='DEMO'&&<p className="fc-notice fc-demo">Designbeispiele · vollständig fiktive Handels- und Hostdaten. Keine Liveverbindung.</p>}
   {error&&<p className="fc-notice" role="alert">{error} {sessionExpired&&<button type="button" onClick={()=>location.reload()}>Seite neu laden</button>}</p>}
+  {historyFailed&&<p className="fc-notice" role="status">Historie momentan nicht erreichbar. Vorhandene Verlaufspunkte behalten ihre Messzeit.</p>}
+  {historyHosts&&!chartHistory&&<p className="fc-muted" role="status">Historie wird geladen …</p>}
   {(fleetId||vpsId)&&<a className="fc-back" href={link(base)}>← Alle VPS und Flotten</a>}
   {!ready?<p className="fc-empty" role="status">VPS-Daten werden geladen …</p>:!data?<p className="fc-empty">Noch kein lesbarer Datenstand verfügbar.</p>:vpsId&&!host||fleetId&&!fleet?<p className="fc-empty">Dieser Einsatz oder VPS ist in der ausgewählten Datenquelle nicht gebunden. Fehlende EA-Exporte erzeugen keine Demo-Flotte.</p>:host?<>
    <p className="fc-ip">IP {host.ip||'nicht hinterlegt'}</p><HostValues host={host} current={fresh(host.observedAt,host.state)}/>{host.issue&&<p className="fc-notice">{host.issue}</p>}{host.attention.map((a,i)=><p className="fc-notice" key={i}>{a}</p>)}
-   <div className="fc-charts"><section className="fc-panel"><h2>CPU-Last</h2><Plot points={host.series.map(p=>({at:p.at,value:p.cpu===null?null:String(p.cpu)}))} label="Fünf-Minuten-Mittel" currency="%" now={now} range={range}/></section><section className="fc-panel"><h2>RAM-Last</h2><Plot points={host.series.map(p=>({at:p.at,value:p.ram===null?null:String(p.ram)}))} label="Physisch belegt · Endstand je Fenster" currency="%" now={now} range={range}/></section>{host.volumes.map(v=><section key={v.name} className="fc-panel"><h2>Festplatte {v.name}</h2><Plot points={host.series.map(p=>({at:p.at,value:p.volumes.find(w=>w.name===v.name)?.percent?.toString()??null}))} label="Belegter Anteil · Endstand je Fenster" currency="%" now={now} range={range}/></section>)}</div>
+   <div className="fc-charts"><section className="fc-panel"><h2>CPU-Last</h2><Plot points={(healthSeries??[]).map(p=>({at:p.at,value:p.cpu===null?null:String(p.cpu)}))} label="Fünf-Minuten-Mittel" currency="%" now={now} range={range}/></section><section className="fc-panel"><h2>RAM-Last</h2><Plot points={(healthSeries??[]).map(p=>({at:p.at,value:p.ram===null?null:String(p.ram)}))} label="Physisch belegt · Endstand je Fenster" currency="%" now={now} range={range}/></section>{host.volumes.map(v=><section key={v.name} className="fc-panel"><h2>Festplatte {v.name}</h2><Plot points={(healthSeries??[]).map(p=>({at:p.at,value:p.volumes.find(w=>w.name===v.name)?.percent?.toString()??null}))} label="Belegter Anteil · Endstand je Fenster" currency="%" now={now} range={range}/></section>)}</div>
    <p className="fc-muted">Tatsächlich vorhandene Beobachtungen · bis zu 7 Tage · zusätzlich durch Quellenbudget begrenzt. Messlücken bleiben sichtbar.</p>
    <section className="fc-panel"><h2>MT5-Prozesse & Collector</h2>{table(['Zuordnung','PID / Prozessstart','CPU am VPS','Working Set / Privat'],host.processes.map(p=>[p.terminal||p.binding,`${p.pid??'—'} · ${stamp(p.startedAt)}`,num(p.cpu,' %'),`${bytes(p.workingSet)} / ${bytes(p.privateBytes)}`]))}</section><h2>Flotten auf {host.name}</h2>{host.fleets.length?<div className="fc-fleet-grid">{host.fleets.map(fleetCard)}</div>:<p className="fc-empty">Noch keine gebundenen EA-Exportquellen.</p>}
   </>:fleet?<>
-   <p>{fleet.broker} · {fleet.environment} · <a href={link(`/controlling/vps/${encodeURIComponent(fleet.hostId)}`)}>{hostOfFleet?.name} →</a></p><div className="fc-badges"><Chip>{fleet.status}</Chip><Chip>{fleet.positionMode||'Positionsmodus unbekannt'}</Chip><Chip>{fleet.sharedAccount?'Konto gesamt · geteilt':'Native Kontowerte'}</Chip></div><FleetValues fleet={fleet} current={fresh(fleet.observedAt,fleet.state,fleet.freshSeconds)}/><section className="fc-panel fc-large"><h2>Konto-Equity</h2><Plot points={fleet.series} label="Native Konto-Equity einschließlich Cashfloweffekten" currency={fleet.currency} now={now} range={range}/></section>
+   <p>{fleet.broker} · {fleet.environment} · <a href={link(`/controlling/vps/${encodeURIComponent(fleet.hostId)}`)}>{hostOfFleet?.name} →</a></p><div className="fc-badges"><Chip>{fleet.status}</Chip><Chip>{fleet.positionMode||'Positionsmodus unbekannt'}</Chip><Chip>{fleet.sharedAccount?'Konto gesamt · geteilt':'Native Kontowerte'}</Chip></div><FleetValues fleet={fleet} current={fresh(fleet.observedAt,fleet.state,fleet.freshSeconds)}/><section className="fc-panel fc-large"><h2>Konto-Equity</h2><Plot points={historyEquity(fleet)} label="Native Konto-Equity einschließlich Cashfloweffekten" currency={fleet.currency} now={now} range={range}/></section>
    <nav className="fc-tabs" aria-label="Flottenbereiche"><a href="#variants">Varianten</a><a href="#risk">Risiko</a><a href="#journal">Offene Positionen</a><a href="#history">Positionshistorie</a><a href="#issues">Issues</a><a href="#source">Betrieb & Daten</a></nav>
    <section className="fc-panel" id="variants"><h2>Varianten</h2>{table(['Symbol / TF','Pool','Revision','Bereitschaft'],fleet.variants.map(v=>[`${v.symbol} / ${v.timeframe??'—'} Min.`,v.pool,v.revision,v.ready===null?'Unbekannt':v.ready?'Bereit':'Nicht bereit']))}</section>
    <section className="fc-panel" id="risk"><h2>Risiko & Pools</h2><p className="fc-muted">Autoritative Quellwerte · kein zwischen Pools verleihbarer Rahmen.</p>{table(['Pool','Gebundenes Stoprisiko U / C'],fleet.pools.map(p=>[p.name,`${p.used??'—'} / ${p.capacity??'—'}`]))}</section>

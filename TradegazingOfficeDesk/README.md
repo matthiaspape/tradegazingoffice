@@ -8,6 +8,8 @@ Lokales Desk für Controlling und Projektmanagement mit dem originalen Tradegazi
 
 Das [gemeinsame UI/UX-Zielbild](../docs/TradegazingOfficeDeskUX.md) beschreibt die Gestaltung und den verbleibenden Ausbau. Der [Umsetzungsnachweis](docs/FLEET_DEMO_VALIDATION.md) hält Umfang, Prüfung und Review fest.
 
+Der getrennte [Abruf von aktuellem Stand und Historie per Cursor](integrations/m650/README.md) ist als isoliert prüfbarer Entwicklungsstand dokumentiert.
+
 ## Start
 
 Der macOS-Autostart ist auf diesem Mac eingerichtet. Einrichtbefehl für die vorhandene Installation: `./desk autostart`. Der eigene Benutzer-LaunchAgent startet nach Anmeldung und hält den Desk am Leben. Danach gewollten Stop/Start mit `./desk stop` beziehungsweise `./desk launch` ausführen. [Betrieb und Grenzen](docs/operations/AUTOSTART.md).

@@ -1,5 +1,6 @@
 // M650 read-model adapter. Money stays a decimal string; sums and differences use exact
 // fixed-point arithmetic (12 places), never floating point.
+import { createHash } from 'node:crypto';
 import { HEALTH_FRESH_SECONDS, ACCOUNT_FRESH_SECONDS } from './fleet-timing.mjs';
 import { scopedEvents } from './fleet-events.mjs';
 export const items = value => Array.isArray(value) ? value : value && typeof value === 'object' ? [value] : [];
@@ -109,7 +110,7 @@ export function healthModel(raw, now) {
     processes: items(sample.processes).map(p => ({pid: numeric(p.pid), startedAt: text(p.started_at), terminal: text(p.terminal_id), binding: text(p.binding), cpu: pct(p.cpu_percent_of_vps), workingSet: numeric(p.working_set), privateBytes: numeric(p.private_bytes)})),
   };
 }
-function accountMatch(a, b) {
+export function accountMatch(a, b) {
   return a.account_key === b.account_key && a.environment === b.environment && (a.run_id ?? null) === (b.run_id ?? null)
     && (a.deployment_id === b.deployment_id || items(a.fleet).some(r => r.deployment_id === b.deployment_id));
 }
@@ -122,8 +123,8 @@ export function fleetModel(binding, accounts, host, now, offline, store) {
     .map(p => ({at:p.at, value:p.value})).sort((a,b)=>epoch(a.at)-epoch(b.at));
   const payload = a?.account ?? {};
   const events = scopedEvents(store, binding, now);
-  const sourceState = text(events.health?.payload?.source_state);
-  const healthCurrent = freshness(events.health?.observed_at_utc, now, freshSeconds) === 'CURRENT';
+  const sourceState = text(a?.heartbeat_at ? a.source_state : events.health?.payload?.source_state);
+  const healthCurrent = freshness(a?.heartbeat_at ?? events.health?.observed_at_utc, now, freshSeconds) === 'CURRENT';
   return {
     id: `${host.id}.${binding.id}`, hostId: host.id, name: binding.name, broker: binding.broker,
     subtitle: binding.subtitle?.trim(),
@@ -157,15 +158,27 @@ export function fleetModel(binding, accounts, host, now, offline, store) {
 export function projectHost(host, bundle, now, transport = {}, store = null) {
   const valid = bundle?.health?.host_id === host.native_host_id;
   const health = healthModel(valid ? bundle.health : {}, now);
-  const offline = !valid || transport.failed === true || bundle?.desk?.connection?.state === 'STALE' || bundle?.health?.connection?.state === 'STALE';
+  const deskValid = transport.split ? bundle?.desk?.host_id === host.native_host_id : valid;
+  const deskOffline = !deskValid || transport.failed === true || transport.deskFailed === true || bundle?.desk?.connection?.state === 'STALE';
+  const healthOffline = !valid || transport.failed === true || transport.healthFailed === true || bundle?.health?.connection?.state === 'STALE'
+    || (!transport.split && deskOffline);
+  const historyIdentity = transport.split && createHash('sha256').update(JSON.stringify(host.bindings.map(binding=>[
+    binding.id, binding.account_key, binding.environment,binding.run_id??null,
+    bundle?.desk?.accounts?.find(account=>accountMatch(account,binding))?.deployment_id??binding.deployment_id
+  ]))).digest('hex');
   return {
     id: host.id, name: host.name, ip: host.ip || null,
-    ...health, state: offline && health.state === 'CURRENT' ? 'STALE' : health.state,
-    connection: !valid ? 'UNAVAILABLE' : offline ? 'STALE' : 'CURRENT',
+    ...health, state: healthOffline && health.state === 'CURRENT' ? 'STALE' : health.state,
+    connection: !valid ? 'UNAVAILABLE' : healthOffline ? 'STALE' : 'CURRENT',
     lastPull: bundle?.health?.connection?.last_success_at ?? null,
+    ...(transport.split ? {
+      historyIdentity,
+      deskConnection: !deskValid ? 'UNAVAILABLE' : deskOffline ? 'STALE' : 'CURRENT',
+      deskLastPull: bundle?.desk?.connection?.last_success_at ?? null,
+    } : {}),
     waitingForEa: bundle?.desk?.source_binding_status === 'WAITING_FOR_EA_EXPORTS',
-    unboundAccounts: valid ? items(bundle?.desk?.accounts).filter(a=>!host.bindings.some(b=>accountMatch(a,b))).length : 0,
-    fleets: host.bindings.map(b => fleetModel(b, valid ? bundle?.desk?.accounts : [], host, now, offline, valid ? store : null)),
-    issue: !valid ? 'Noch keine erreichbare, passend gebundene Hostquelle' : transport.failed ? 'Backendabruf fehlgeschlagen. Letzter empfangener Stand mit Originalzeiten.' : null,
+    unboundAccounts: deskValid ? items(bundle?.desk?.accounts).filter(a=>!host.bindings.some(b=>accountMatch(a,b))).length : 0,
+    fleets: host.bindings.map(b => fleetModel(b, deskValid ? bundle?.desk?.accounts : [], host, now, deskOffline || (!transport.split && healthOffline), deskValid ? store : null)),
+    issue: !valid ? 'Noch keine erreichbare, passend gebundene Hostquelle' : (transport.failed || transport.healthFailed) ? 'Backendabruf fehlgeschlagen. Letzter empfangener Stand mit Originalzeiten.' : null,
   };
 }

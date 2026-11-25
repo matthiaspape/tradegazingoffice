@@ -1,0 +1,382 @@
+--- a/fleet_desk/projection.py
++++ b/fleet_desk/projection.py
+@@ -130,3 +130,3 @@
+ 
+-def desk(config, source_id=None, now=None):
++def desk(config, source_id=None, now=None, *, current_only=False):
+     now = now or datetime.now(timezone.utc)
+@@ -138,3 +138,3 @@
+             encoded_scope = json.dumps(key, separators=(',', ':'))
+-            recent = db.execute('SELECT id,first_record FROM originals WHERE scope=? ORDER BY observed DESC,id DESC LIMIT ?',
++            recent = [] if current_only else db.execute('SELECT id,first_record FROM originals WHERE scope=? ORDER BY observed DESC,id DESC LIMIT ?',
+                                 (encoded_scope, HISTORY_LIMIT+1)).fetchall()
+@@ -159,2 +159,16 @@
+                         break
++                if current_only:
++                    # Positions stay tied to the exact account cohort. Keep the latest
++                    # observed point per pool/variant even when updates arrive separately.
++                    heartbeat_seen = False
++                    for cursor, raw, kind in db.execute(
++                            "SELECT id,first_record,type FROM originals WHERE scope=? "
++                            "AND type IN ('pool_snapshot','variant_snapshot','telemetry_health') "
++                            "AND json_extract(CAST(first_record AS TEXT), '$.source_id')=? "
++                            "AND json_extract(CAST(first_record AS TEXT), '$.session_id')=? "
++                            "ORDER BY observed DESC,id DESC",
++                            (encoded_scope, account['source_id'], account['session_id'])):
++                        if kind != 'telemetry_health' or not heartbeat_seen:
++                            selected[cursor] = raw
++                            heartbeat_seen |= kind == 'telemetry_health'
+             ordered = [(cursor, json.loads(raw)) for cursor, raw in selected.items()]
+@@ -162,5 +176,6 @@
+             history[key] = corrected([r for _, r in ordered])
+-            for cursor, raw in db.execute("SELECT id,first_record FROM originals WHERE scope=? AND type NOT LIKE '%_snapshot' ORDER BY observed DESC,id DESC LIMIT 200",
+-                                         (encoded_scope,)):
+-                journals.append((cursor, json.loads(raw)))
++            if not current_only:
++                for cursor, raw in db.execute("SELECT id,first_record FROM originals WHERE scope=? AND type NOT LIKE '%_snapshot' ORDER BY observed DESC,id DESC LIMIT 200",
++                                             (encoded_scope,)):
++                    journals.append((cursor, json.loads(raw)))
+         imports = [dict(source_id=s, status=t, checked_at=c, reason=r) for s, t, c, r in
+@@ -203,3 +218,3 @@
+                 variants[(q.get('pool'), q.get('revision'))] = row
+-        series, dd = drawdown([(r['observed_at_utc'], r['payload'].get('equity')) for r in snaps])
++
+         attention = []
+@@ -217,3 +232,5 @@
+                 attention.append('Offene Position ohne belegten aktuellen Stop: ' + position['payload'].get('position_id', '?'))
+-        accounts.append(dict(account_key=key[0], environment=key[1], run_id=key[2],
++        heartbeat = next((r for r in reversed(records) if r['record_type'] == 'telemetry_health'
++                          and r['source_id'] == active_source and r['session_id'] == session), None) if current_only else None
++        view = dict(account_key=key[0], environment=key[1], run_id=key[2],
+             name=sources[0].get('label', sources[0]['deployment_id']), source_ids=[s['source_id'] for s in sources],
+@@ -221,8 +238,18 @@
+             observed_at=latest['observed_at_utc'] if latest else None, age_seconds=age,
+-            position_mode=mode, account=p, positions=positions, pools=list(pools.values()),
++            position_mode=mode, account=p,
++            **(dict(heartbeat_at=heartbeat['observed_at_utc'], source_state=heartbeat['payload'].get('source_state'))
++               if heartbeat else {}), positions=positions, pools=list(pools.values()),
+             variants=list(variants.values()), fleet=[r for r in cohort if r['record_type'] == 'fleet_snapshot'],
+-            series=series, observed_equity_drawdown=dd, equity_basis='Native Konto-Equity, unbereinigt, beobachtet im vorhandenen Zeitraum',
+-            stats=cycle_stats(records, allowed), fleet_pnl=fleet_pnl(records) if allowed else [], period_net=None,
+-            period_reason='Kein durchgängig belegtes gebucht/offen-Paar mit gemeinsamem Watermark',
+-            attention=attention))
++            attention=attention)
++        if not current_only:
++            series, dd = drawdown([(r['observed_at_utc'], r['payload'].get('equity')) for r in snaps])
++            view.update(series=series, observed_equity_drawdown=dd,
++                        equity_basis='Native Konto-Equity, unbereinigt, beobachtet im vorhandenen Zeitraum',
++                        stats=cycle_stats(records, allowed), fleet_pnl=fleet_pnl(records) if allowed else [],
++                        period_net=None, period_reason='Kein durchgängig belegtes gebucht/offen-Paar mit gemeinsamem Watermark')
++        accounts.append(view)
++    if current_only:
++        return dict(as_of=now.isoformat(), accounts=accounts, source_status=status,
++                    source_binding_status='REGISTERED' if config['sources'] else 'WAITING_FOR_EA_EXPORTS',
++                    pending_sources=config.get('pending_sources', []), imports=imports)
+     journals.sort(key=lambda item: (item[1]['observed_at_utc'], item[0]))
+--- a/fleet_desk/health.py
++++ b/fleet_desk/health.py
+@@ -151,3 +151,3 @@
+ 
+-def read(config, days=7):
++def read(config, days=7, *, current_only=False):
+     path = Path(config['health_database'])
+@@ -157,3 +157,10 @@
+         after = time.time() - days * 86400
+-        rows = [json.loads(r[0]) for r in db.execute('SELECT value FROM windows WHERE host=? AND slot>=? ORDER BY slot,session LIMIT 10000', (config['host_id'], after))]
++        threshold_windows = int(config['health'].get('thresholds', {}).get('hold_windows', 3))
++        if current_only:
++            rows = [json.loads(r[0]) for r in db.execute(
++                'SELECT value FROM windows WHERE host=? AND slot>=? ORDER BY slot DESC,session DESC LIMIT ?',
++                (config['host_id'], after, max(12, threshold_windows * 4)))]
++            rows.reverse()
++        else:
++            rows = [json.loads(r[0]) for r in db.execute('SELECT value FROM windows WHERE host=? AND slot>=? ORDER BY slot,session LIMIT 10000', (config['host_id'], after))]
+     attention = []
+--- a/fleet_desk/server.py
++++ b/fleet_desk/server.py
+@@ -9,3 +9,3 @@
+ from urllib.parse import parse_qs, urlsplit
+-from . import health
++from . import health, sync
+ from .projection import desk, scope
+@@ -43,2 +43,4 @@
+     require(host in ('127.0.0.1', '::1') or (cert and key), 'Remote access requires HTTPS certificate and key')
++
++    history = sync.History(config) if backend is None else None
+ 
+@@ -82,2 +84,7 @@
+                     result = backend.read(path, q)
++                elif path == '/v1/current':
++                    require(set(q) == {'part'}, 'Select desk or health')
++                    result = sync.current(config, q['part'][0])
++                elif path == '/v1/history':
++                    result = history.read(*sync.history_query(q))
+                 elif path == '/v1/desk':
+--- a/fleet_desk/mac_desk.py
++++ b/fleet_desk/mac_desk.py
+@@ -14,2 +14,3 @@
+ from .daily_log import install as install_log
++from .sync import history_query
+ from .server import server
+@@ -32,2 +33,3 @@
+         secret = base64.b64encode(token.encode()).decode()
++        direct = endpoint and endpoint.startswith(('/v1/current?', '/v1/history?'))
+         # Both the bearer key and the script go through encrypted SSH stdin,
+@@ -41,2 +43,8 @@
+             script += "health=(Invoke-RestMethod 'http://127.0.0.1:8765/v1/health?days=7' -Headers $headers -TimeoutSec 8)}\n"
++        elif direct:
++            if not re.fullmatch(r'/v1/current\?part=(desk|health)|/v1/history\?hours=(24|168)(&after=[0-9a-f]{32})?', endpoint):
++                raise ValueError('Invalid monitoring endpoint')
++            timeout = 20 if endpoint.startswith('/v1/history?') else 12
++            script += "$reply=Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:8765"+endpoint+"' -Headers $headers -TimeoutSec "+str(timeout)+"\n"
++            script += "[Console]::Write($reply.Content)\n"
+         else:
+@@ -44,3 +52,4 @@
+             script += "$result=Invoke-RestMethod 'http://127.0.0.1:8765"+endpoint+"' -Headers $headers -TimeoutSec 8\n"
+-        script += "$result|ConvertTo-Json -Depth 50 -Compress\n"
++        if not direct:
++            script += "$result|ConvertTo-Json -Depth 50 -Compress\n"
+         encoded = base64.b64encode(script.encode()).decode()
+@@ -56,2 +65,33 @@
+ 
++class CurrentRead:
++    def __init__(self, part, transport, clock, refresh_seconds):
++        self.part, self.transport, self.clock = part, transport, clock
++        self.refresh_seconds = refresh_seconds
++        self.value = self.last_success = self.last_attempt = None
++        self.lock = threading.Lock()
++
++    def snapshot(self):
++        with self.lock:
++            now = self.clock()
++            stale = self.last_attempt != self.last_success
++            if self.last_attempt is None or now - self.last_attempt >= (30 if stale else self.refresh_seconds):
++                self.last_attempt = now
++                try:
++                    value = self.transport.fetch('/v1/current?' + urlencode(dict(part=self.part)))
++                    field = 'accounts' if self.part == 'desk' else 'windows'
++                    if not isinstance(value, dict) or not isinstance(value.get(field), list):
++                        raise VpsUnavailable('VPS-Antwort unvollständig')
++                    self.value, self.last_success = value, now
++                except OSError:
++                    pass
++            if self.value is None or now - self.last_success > 7 * 86400:
++                self.value = None
++                raise VpsUnavailable('Noch kein erreichbarer VPS-Datenstand')
++            return dict(self.value, connection=dict(
++                state='CURRENT' if self.last_attempt == self.last_success else 'STALE',
++                last_success_at=datetime.fromtimestamp(self.last_success, timezone.utc).isoformat(),
++                last_attempt_at=datetime.fromtimestamp(self.last_attempt, timezone.utc).isoformat(),
++                client_location='MAC', transport='AUTOMATIC_SSH_READ'))
++
++
+ class MacBackend:
+@@ -64,2 +104,4 @@
+         self.lock = threading.Lock()
++        self.current_reads = {part: CurrentRead(part, self.transport, self.clock, self.refresh_seconds)
++                              for part in ('desk', 'health')}
+ 
+@@ -93,2 +135,12 @@
+     def read(self, path, query):
++        if path == '/v1/current':
++            if set(query) != {'part'} or query['part'][0] not in self.current_reads:
++                raise ValueError('Select desk or health')
++            return self.current_reads[query['part'][0]].snapshot()
++        if path == '/v1/history':
++            hours, after = history_query(query)
++            params = dict(hours=hours)
++            if after:
++                params['after'] = after
++            return self.transport.fetch('/v1/history?' + urlencode(params))
+         if path == '/v1/events':
+@@ -127,6 +179,6 @@
+     stop = threading.Event()
+-    def collect():
++    def collect(part):
+         while not stop.is_set():
+             try:
+-                backend.snapshot()
++                backend.current_reads[part].snapshot()
+             except VpsUnavailable:
+@@ -142,3 +194,4 @@
+             stop.wait(settings.get('refresh_seconds',300))
+-    threading.Thread(target=collect, daemon=True).start()
++    for part in backend.current_reads:
++        threading.Thread(target=collect, args=(part,), daemon=True).start()
+     web = server(settings, host='127.0.0.1', port=settings.get('port',8766), backend=backend)
+--- /dev/null
++++ b/fleet_desk/sync.py
+@@ -0,0 +1,173 @@
++"""Read-only, cursor-based Fleet Control projections for the Office client."""
++from collections import OrderedDict
++from datetime import datetime, timezone
++from decimal import Decimal, InvalidOperation
++import json
++import re
++from secrets import token_hex
++from threading import Lock
++
++from . import health
++from .projection import corrected, desk, number, scope
++from .vendor.read_api import Reader
++
++HOURS = (24, 168)
++REVISIONS = 12
++
++
++def history_query(query):
++    if set(query) - {'hours', 'after'} or len(query.get('hours', [])) != 1:
++        raise ValueError('Specify a history window')
++    hours = int(query['hours'][0])
++    after = query.get('after', [''])[0]
++    if hours not in HOURS or (after and not re.fullmatch(r'[0-9a-f]{32}', after)):
++        raise ValueError('Invalid history window or cursor')
++    return hours, after
++
++
++def current(config, part):
++    if part == 'desk':
++        return dict(desk(config, current_only=True), host_id=config['host_id'])
++    if part == 'health':
++        return health.read(config, days=7, current_only=True)
++    raise ValueError('Unknown current data part')
++
++
++def instant(iso):
++    return datetime.fromisoformat(iso.replace('Z', '+00:00')).timestamp()
++
++
++def fraction(used, total):
++    try:
++        if isinstance(used, bool) or isinstance(total, bool):
++            return None
++        n, d = Decimal(str(used)), Decimal(str(total))
++        if n.is_finite() and d.is_finite() and 0 <= n <= d and d > 0:
++            return float(n * 100 / d)
++    except InvalidOperation:
++        pass
++    return None
++
++
++def utilization(total, free):
++    try:
++        size, spare = Decimal(str(total)), Decimal(str(free))
++        if size.is_finite() and spare.is_finite() and 0 <= spare <= size and size > 0:
++            used = size - spare
++            return int(used), fraction(used, size)
++    except InvalidOperation:
++        pass
++    return None, None
++
++
++def health_points(raw, lower, upper):
++    points = {}
++    for window in raw['windows']:
++        last = window['last']
++        stamp = last['observed_at']
++        observed = instant(stamp)
++        slot = window['slot']
++        if not last.get('available') or not lower <= observed <= upper or int(observed // 300) * 300 != slot:
++            continue
++        if slot in points and instant(points[slot]['at']) >= observed:
++            continue
++        total = last.get('total_ram')
++        free = last.get('available_ram')
++        ram = utilization(total, free)[1]
++        volumes = []
++        for volume in last.get('volumes', []):
++            size, unused = volume.get('size'), volume.get('free')
++            used, percent = utilization(size, unused)
++            volumes.append(dict(name=volume['name'], total=size, used=used, percent=percent))
++        points[slot] = dict(at=stamp, cpu=window['cpu_mean'], ram=ram, volumes=volumes)
++    return points
++
++
++def equity_record(raw):
++    row = json.loads(raw)
++    payload = row['payload']
++    row['payload'] = {key: payload[key] for key in ('equity', 'logical_record_id') if key in payload}
++    return row
++
++
++def equity_points(rows, lower, upper):
++    points = {}
++    # Match the original native correction rules before choosing a chart point.
++    for record in corrected(rows):
++        stamp = record['observed_at_utc']
++        observed = instant(stamp)
++        value = record['payload'].get('equity')
++        if not lower <= observed <= upper or number(value) is None:
++            continue
++        key = (*scope(record), record['deployment_id'], int(observed // 300) * 300)
++        if key not in points or instant(points[key]['at']) <= observed:
++            points[key] = dict(at=stamp, value=value)
++    return points
++
++
++def changes(before, after):
++    return {
++        **{key: None for key in before.keys() - after.keys()},
++        **{key: value for key, value in after.items() if before.get(key) != value},
++    }
++
++
++class History:
++    def __init__(self, config, clock=lambda: datetime.now(timezone.utc)):
++        self.config = config
++        self.clock = clock
++        self.lock = Lock()
++        self.views = {hours: OrderedDict() for hours in HOURS}
++        self.rows = []
++        self.highwater = None
++        self.floor = None
++
++    def refresh_equity(self):
++        if not self.config['sources']:
++            return
++        registered = {json.dumps([s['account_key'], s['environment'], s.get('run_id')], separators=(',', ':'))
++                      for s in self.config['sources']}
++        reader = Reader(self.config['database'], self.config['sources'])
++        with reader.open() as db:
++            db.execute('BEGIN')
++            seen = db.execute("SELECT seq FROM sqlite_sequence WHERE name='originals'").fetchone()
++            highwater = seen[0] if seen else 0
++            previous = db.execute("SELECT value FROM office_retention_state WHERE key='cursor_floor'").fetchone()
++            floor = int(previous[0]) if previous else 0
++            reset = self.highwater is None or self.floor != floor or highwater < self.highwater
++            after = 0 if reset else self.highwater
++            additions = [(cursor, equity_record(raw)) for cursor, raw, row_scope in db.execute(
++                "SELECT id,first_record,scope FROM originals WHERE id>? AND id<=? "
++                "AND type='account_snapshot' ORDER BY id", (after, highwater)) if row_scope in registered]
++        if self.highwater is not None and highwater < self.highwater:
++            for view in self.views.values():
++                view.clear()
++        if reset:
++            self.rows = additions
++        else:
++            self.rows.extend(additions)
++        self.highwater, self.floor = highwater, floor
++
++    def read(self, hours, after):
++        with self.lock:
++            self.refresh_equity()
++            now = self.clock().timestamp()
++            lower = now - hours * 3600
++            rows = sorted(self.rows, key=lambda row: (row[1]['observed_at_utc'], row[0]))
++            equity = equity_points([row for _, row in rows], lower, now)
++            host = health_points(health.read(self.config, days=hours // 24), lower, now)
++            view = self.views[hours]
++            latest = next(reversed(view), None)
++            token = latest
++            if latest is None or view[latest] != (equity, host):
++                token = token_hex(16)
++                view[token] = (equity, host)
++            base = view.get(after)
++            while len(view) > REVISIONS:
++                view.popitem(last=False)
++            equity_delta, health_delta = equity, host
++            if base is not None:
++                equity_delta, health_delta = changes(base[0], equity), changes(base[1], host)
++            return dict(cursor=token, reset=base is None, host_id=self.config['host_id'],
++                        equity=[[list(key[:-1]), key[-1], value] for key, value in equity_delta.items()],
++                        health=list(health_delta.items()))

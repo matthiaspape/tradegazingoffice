@@ -2,7 +2,7 @@ import { readFileSync, lstatSync } from 'node:fs';
 import { resolve, isAbsolute } from 'node:path';
 import { deskHome } from './config.mjs';
 import { DeskError } from './contract.mjs';
-import { projectHost } from './fleet-model.mjs';
+import { accountMatch, projectHost } from './fleet-model.mjs';
 import { createEventStore, pullEvents, EVENT_LIMITS } from './fleet-events.mjs';
 import { REFRESH_WAIT_MS } from './fleet-timing.mjs';
 
@@ -55,51 +55,109 @@ async function waitBriefly(pending, milliseconds) {
   try { await Promise.race([pending,new Promise(resolve=>{timer=setTimeout(resolve,milliseconds);})]); }
   finally { clearTimeout(timer); }
 }
-export function createReader({fetcher=fetch, clock=Date.now, cache=new Map(), refreshWaitMs=REFRESH_WAIT_MS, events=false, readToken=path=>{
+export function createReader({fetcher=fetch, clock=Date.now, cache=new Map(), refreshWaitMs=REFRESH_WAIT_MS, events=false, split=false, readToken=path=>{
   const stat=lstatSync(path); if(!stat.isFile() || (stat.mode&0o077))throw new Error('Private token required');
   return readFileSync(path,'utf8').trim();
 }}={}) {
-  async function read(host) {
+  async function read(host, loadJournal) {
     const signature=JSON.stringify(host), now=clock();
     let entry=cache.get(host.id);
-    if (!entry || entry.signature!==signature) { entry={signature,value:null,at:0,attempt:null,pending:null,failed:false,events:createEventStore(),eventsPending:null};cache.set(host.id,entry); }
+    if (!entry || entry.signature!==signature) { entry={signature,value:null,at:0,attempt:null,pending:null,failed:false,events:createEventStore(),eventsPending:null, partAt:{}, partFailed:{}};cache.set(host.id,entry); }
     if(entry.value && now-entry.at>7*86400000)entry.value=null;
+    if(split && entry.value) for(const part of ['desk','health']) {
+      if(now-entry.partAt[part]>7*86400000) delete entry.value[part];
+    }
     async function refresh() {
       entry.attempt=clock();
       try {
         const token=readToken(host.token_file);
         if(!/^[A-Za-z0-9_-]{20,200}$/.test(token))throw new Error('Invalid token');
-        const [desk,health]=await Promise.all([
-          fetchJson(new URL('/v1/desk',host.endpoint),token,fetcher),
-          fetchJson(new URL('/v1/health?days=7',host.endpoint),token,fetcher),
-        ]);
-        if(health.host_id!==host.native_host_id || !Array.isArray(desk.accounts))throw new Error('Identity/shape mismatch');
-        entry.value={desk,health};entry.at=clock();entry.failed=false;
-        // Deal, incident and heartbeat history runs beside the account refresh and never delays it.
-        // A failed pull keeps the last received journal and is retried with the next refresh.
-        if(events && !entry.eventsPending) {
-          const store=entry.events;
-          entry.eventsPending=pullEvents(store, after=>fetchJson(new URL(`/v1/events?after=${after}&limit=${EVENT_LIMITS.page}`,host.endpoint),token,fetcher), clock)
-            .catch(()=>{store.failed=true;}).finally(()=>{entry.eventsPending=null;});
+        if(split) {
+          await Promise.all(['desk','health'].map(async part=>{
+            try {
+              const value=await fetchJson(new URL(`/v1/current?part=${part}`,host.endpoint),token,fetcher);
+              if (value.host_id!==host.native_host_id || !Array.isArray(value[part==='desk'?'accounts':'windows'])) {
+                throw new Error('Identity/shape mismatch');
+              }
+              entry.value??={};
+              entry.value[part]=value;
+              entry.partAt[part]=entry.at=clock();
+              entry.partFailed[part]=false;
+              entry.first.resolve();
+            } catch { entry.partFailed[part]=true; }
+          }));
+          entry.failed=false;
+        } else {
+          const [desk,health]=await Promise.all([
+            fetchJson(new URL('/v1/desk',host.endpoint),token,fetcher),
+            fetchJson(new URL('/v1/health?days=7',host.endpoint),token,fetcher),
+          ]);
+          if(health.host_id!==host.native_host_id || !Array.isArray(desk.accounts))throw new Error('Identity/shape mismatch');
+          entry.value={desk,health};entry.at=clock();entry.failed=false;
         }
       } catch { entry.failed=true; }
-      finally { entry.pending=null; }
+      finally { entry.first?.resolve(); entry.pending=null; }
     }
     // Successful reads have no Office TTL: the existing Mac backend already coalesces/caches its pulls.
     // Keeping a second TTL here lets another tab shift the cache phase and miss this tab's next poll.
     if(!entry.pending && (!entry.failed || entry.attempt===null || now-entry.attempt>=30000)) {
+      if(split) entry.first=Promise.withResolvers();
       entry.pending=Promise.resolve().then(refresh);
     }
     if(entry.pending) {
-      if(!entry.value)await entry.pending;
+      if(!entry.value)await (split?entry.first.promise:entry.pending);
       else await waitBriefly(entry.pending,refreshWaitMs);
     }
-    return {host:projectHost(host,entry.value,clock(),{failed:entry.failed},entry.events),refreshing:entry.pending!==null};
+    if(events && loadJournal && entry.value?.desk && !entry.eventsPending) {
+      // Journal catch-up is requested by fleet detail and runs independently of live figures.
+      entry.eventsPending=Promise.resolve().then(()=>{
+        const token=readToken(host.token_file);
+        const url=after=>new URL(`/v1/events?after=${after}&limit=${EVENT_LIMITS.page}`,host.endpoint);
+        return pullEvents(entry.events,after=>fetchJson(url(after),token,fetcher),clock);
+      }).catch(()=>{entry.events.failed=true;}).finally(()=>{entry.eventsPending=null;});
+    }
+    return {host:projectHost(host,entry.value,clock(),{failed:entry.failed, split,
+      deskFailed:entry.partFailed.desk, healthFailed:entry.partFailed.health},entry.events),refreshing:entry.pending!==null};
   }
-  return async hosts=>{
-    const results=await Promise.all(hosts.map(read));
-    return {mode:'NATIVE',asOf:new Date(clock()).toISOString(),hosts:results.map(r=>r.host),refreshing:results.some(r=>r.refreshing)};
+  return async (hosts,loadJournal=true)=>{
+    const results=await Promise.all(hosts.map(host=>read(host,loadJournal)));
+    return {mode:'NATIVE',...(split ? {splitHistory:true} : {}),asOf:new Date(clock()).toISOString(),hosts:results.map(r=>r.host),refreshing:results.some(r=>r.refreshing)};
   };
 }
-const reader=createReader({cache:entries, events:true});
-export const fleetOverview = () => reader(loadSources());
+const reader=createReader({cache:entries, events:true, split:true});
+export const fleetOverview = (loadJournal) => reader(loadSources(),loadJournal);
+
+export async function fleetHistory(id, hours, after) {
+  const host=loadSources().find(h=>h.id===id);
+  if(!host) throw new DeskError('VPS ist nicht gebunden.',404);
+  const stat=lstatSync(host.token_file);
+  if(!stat.isFile() || (stat.mode&0o077))throw new DeskError('Historienzugang nicht verfügbar.',503);
+  const token=readFileSync(host.token_file,'utf8').trim();
+  if(!/^[A-Za-z0-9_-]{20,200}$/.test(token))throw new DeskError('Historienzugang nicht verfügbar.',503);
+  const query=new URLSearchParams({hours:String(hours)});
+  if(after) query.set('after',after);
+  let payload;
+  try {
+    payload=await fetchJson(new URL('/v1/history?'+query,host.endpoint),token,fetch);
+  } catch {
+    throw new DeskError('Historie momentan nicht erreichbar.',503);
+  }
+  if (payload.host_id!==host.native_host_id || typeof payload.reset!=='boolean' ||
+      !/^[0-9a-f]{32}$/.test(payload.cursor) || !Array.isArray(payload.equity) || !Array.isArray(payload.health)) {
+    throw new DeskError('Historie passt nicht zur gebundenen Quelle.',503);
+  }
+  const accounts=entries.get(host.id)?.value?.desk?.accounts ?? [];
+  const equity=[];
+  for (const [scope,slot,point] of payload.equity) {
+    const [account_key,environment,run_id,deployment_id]=scope;
+    for (const binding of host.bindings) {
+      const account=accounts.find(a=>accountMatch(a,binding));
+      const actualDeployment=account?.deployment_id ?? binding.deployment_id;
+      if (account_key===binding.account_key && environment===binding.environment &&
+          run_id===(binding.run_id??null) && deployment_id===actualDeployment) {
+        equity.push([`${host.id}.${binding.id}`,slot,point]);
+      }
+    }
+  }
+  return {cursor:payload.cursor,reset:payload.reset,equity,health:payload.health};
+}
