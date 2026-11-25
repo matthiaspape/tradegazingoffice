@@ -6,6 +6,7 @@ import {join} from 'node:path';
 import {createServer} from 'node:http';
 import {createReader} from '../ops/fleet-reader.mjs';
 import {applyHistory} from '../app/controlling/fleet-control/useFleetHistory.ts';
+import {GET as overviewGET} from '../app/api/fleet-control/overview/route.ts';
 import {GET as historyGET} from '../app/api/fleet-control/history/route.ts';
 
 const now=Date.parse('2026-11-25T19:30:00Z');
@@ -66,13 +67,22 @@ test('Office History forwards only bounded registered requests and maps delta sc
     rmSync(dir,{recursive:true,force:true});
   });
   const seen=[];
+  let deployment='dep';
+  const nextPoint={...point,value:'1002'};
   const upstream=createServer((request,response)=>{
     assert.equal(request.headers.authorization,`Bearer ${readerToken}`);
     const url=new URL(request.url,'http://127.0.0.1');
-    seen.push(url.href);
     response.setHeader('Content-Type','application/json');
+    if(url.pathname==='/v1/current'){
+      const value=url.searchParams.get('part')==='health'?health:{...desk,accounts:[{
+        ...desk.accounts[0],deployment_id:deployment,fleet:[{deployment_id:'dep'}]
+      }]};
+      response.end(JSON.stringify(value));return;
+    }
+    seen.push(url.href);
     response.end(JSON.stringify({host_id:'vps',cursor:next,reset:!url.searchParams.has('after'),
-      equity:[[[binding.account_key,'DEMO',null,'dep'],1,point],[['other-private-account','DEMO',null,'dep'],1,point]],
+      equity:[[[binding.account_key,'DEMO',null,'dep'],1,point],[[binding.account_key,'DEMO',null,'dep-v2'],1,nextPoint],
+        [['other-private-account','DEMO',null,'dep'],1,point]],
       health:[[1,null]]}));
   });
   await new Promise(resolve=>upstream.listen(0,'127.0.0.1',resolve));
@@ -93,20 +103,36 @@ test('Office History forwards only bounded registered requests and maps delta sc
   assert.equal(seen.length,0);
   const baseline=await call('host=primary&hours=24');
   assert.equal(baseline.status,200);
-  assert.deepEqual(await baseline.json(),{cursor:next,reset:true,equity:[['primary.nova',1,point]],health:[[1,null]]});
-  const delta=await call('host=primary&hours=24&after='+cursor);
+  const initial=await baseline.json();
+  assert.match(initial.identity,/^[0-9a-f]{64}$/);
+  assert.deepEqual(initial,{identity:initial.identity,cursor:next,reset:true,equity:[['primary.nova',1,point]],health:[[1,null]]});
+  assert.equal((await call('host=primary&hours=24&after='+cursor)).status,400);
+  const diffQuery='host=primary&hours=24&after='+cursor+'&identity='+initial.identity;
+  const delta=await call(diffQuery);
   assert.equal((await delta.json()).reset,false);
   assert(seen[1].endsWith('hours=24&after='+cursor));
+  deployment='dep-v2';
+  const overview=()=>overviewGET(new Request('http://127.0.0.1:43120/api/fleet-control/overview',
+    {headers:{host:'127.0.0.1:43120',authorization:'Bearer '+officeToken}}));
+  await overview();
+  const current=(await (await overview()).json()).hosts[0];
+  assert.notEqual(current.historyIdentity,initial.identity);
+  const rollover=await call(diffQuery);
+  assert.equal(rollover.status,200);
+  assert.deepEqual(await rollover.json(),{identity:current.historyIdentity,cursor:next,reset:true,
+    equity:[['primary.nova',1,nextPoint]],health:[[1,null]]});
+  assert(seen[2].endsWith('hours=24'));
+
 });
 
 test('browser applies corrections and removals and replaces an expired cursor snapshot',()=>{
-  const empty={cursor:'',equity:new Map(),health:new Map(),failed:false};
-  const baseline=applyHistory(empty,{cursor,reset:true,equity:[['primary.nova',1,point]],health:[[1,{at,cpu:15,ram:50,volumes:[]}]]});
-  const delta=applyHistory(baseline,{cursor:next,reset:false,equity:[['primary.nova',1,null],['primary.nova',2,point]],health:[]});
+  const empty={identity:'',cursor:'',equity:new Map(),health:new Map(),failed:false};
+  const baseline=applyHistory(empty,{identity:'identity',cursor,reset:true,equity:[['primary.nova',1,point]],health:[[1,{at,cpu:15,ram:50,volumes:[]}]]});
+  const delta=applyHistory(baseline,{identity:'identity',cursor:next,reset:false,equity:[['primary.nova',1,null],['primary.nova',2,point]],health:[]});
   assert.equal(baseline.equity.get('primary.nova').has(1),true);
   assert.deepEqual([...delta.equity.get('primary.nova')],[[2,point]]);
   assert.equal(delta.health.size,1);
-  const expired=applyHistory(delta,{cursor,reset:true,equity:[],health:[]});
+  const expired=applyHistory(delta,{identity:'identity',cursor,reset:true,equity:[],health:[]});
   assert.equal(expired.equity.size,0);
   assert.equal(expired.health.size,0);
 });

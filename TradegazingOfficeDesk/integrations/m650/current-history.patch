@@ -10,24 +10,40 @@
 -            recent = db.execute('SELECT id,first_record FROM originals WHERE scope=? ORDER BY observed DESC,id DESC LIMIT ?',
 +            recent = [] if current_only else db.execute('SELECT id,first_record FROM originals WHERE scope=? ORDER BY observed DESC,id DESC LIMIT ?',
                                  (encoded_scope, HISTORY_LIMIT+1)).fetchall()
-@@ -159,2 +159,16 @@
+@@ -159,2 +159,32 @@
                          break
 +                if current_only:
-+                    # Positions stay tied to the exact account cohort. Keep the latest
-+                    # observed point per pool/variant even when updates arrive separately.
-+                    heartbeat_seen = False
-+                    for cursor, raw, kind in db.execute(
-+                            "SELECT id,first_record,type FROM originals WHERE scope=? "
-+                            "AND type IN ('pool_snapshot','variant_snapshot','telemetry_health') "
-+                            "AND json_extract(CAST(first_record AS TEXT), '$.source_id')=? "
-+                            "AND json_extract(CAST(first_record AS TEXT), '$.session_id')=? "
-+                            "ORDER BY observed DESC,id DESC",
-+                            (encoded_scope, account['source_id'], account['session_id'])):
-+                        if kind != 'telemetry_health' or not heartbeat_seen:
-+                            selected[cursor] = raw
-+                            heartbeat_seen |= kind == 'telemetry_health'
++                    # Filter within the active session and fetch original bytes only
++                    # for the newest record of each pool, variant and heartbeat.
++                    for cursor, raw in db.execute("""
++                        WITH auxiliary AS (
++                            SELECT id, record_id, type, observed,
++                                COALESCE(json_extract(CAST(first_record AS TEXT), '$.payload.pool'),
++                                         json_extract(CAST(first_record AS TEXT), '$.payload.risk_pool_id')) AS pool,
++                                json_extract(CAST(first_record AS TEXT), '$.payload.revision') AS revision,
++                                json_extract(CAST(first_record AS TEXT), '$.supersedes_record_id') AS supersedes
++                            FROM originals
++                            WHERE scope=? AND type IN ('pool_snapshot','variant_snapshot','telemetry_health')
++                                AND json_extract(CAST(first_record AS TEXT), '$.source_id')=?
++                                AND json_extract(CAST(first_record AS TEXT), '$.session_id')=?
++                        ), ranked AS (
++                            SELECT id, row_number() OVER (
++                                PARTITION BY type,
++                                    CASE WHEN type!='telemetry_health' THEN pool END,
++                                    CASE WHEN type='variant_snapshot' THEN revision END
++                                ORDER BY observed DESC,id DESC
++                            ) AS rank
++                            FROM auxiliary
++                            WHERE record_id NOT IN (SELECT supersedes FROM auxiliary WHERE supersedes IS NOT NULL)
++                                AND (type='telemetry_health' OR (pool IS NOT NULL
++                                    AND (type!='variant_snapshot' OR revision IS NOT NULL)))
++                        )
++                        SELECT originals.id, originals.first_record
++                        FROM ranked JOIN originals USING(id) WHERE rank=1
++                        """, (encoded_scope, account['source_id'], account['session_id'])):
++                        selected[cursor] = raw
              ordered = [(cursor, json.loads(raw)) for cursor, raw in selected.items()]
-@@ -162,5 +176,6 @@
+@@ -162,5 +192,6 @@
              history[key] = corrected([r for _, r in ordered])
 -            for cursor, raw in db.execute("SELECT id,first_record FROM originals WHERE scope=? AND type NOT LIKE '%_snapshot' ORDER BY observed DESC,id DESC LIMIT 200",
 -                                         (encoded_scope,)):
@@ -37,19 +53,19 @@
 +                                             (encoded_scope,)):
 +                    journals.append((cursor, json.loads(raw)))
          imports = [dict(source_id=s, status=t, checked_at=c, reason=r) for s, t, c, r in
-@@ -203,3 +218,3 @@
+@@ -203,3 +234,3 @@
                  variants[(q.get('pool'), q.get('revision'))] = row
 -        series, dd = drawdown([(r['observed_at_utc'], r['payload'].get('equity')) for r in snaps])
 +
          attention = []
-@@ -217,3 +232,5 @@
+@@ -217,3 +248,5 @@
                  attention.append('Offene Position ohne belegten aktuellen Stop: ' + position['payload'].get('position_id', '?'))
 -        accounts.append(dict(account_key=key[0], environment=key[1], run_id=key[2],
 +        heartbeat = next((r for r in reversed(records) if r['record_type'] == 'telemetry_health'
 +                          and r['source_id'] == active_source and r['session_id'] == session), None) if current_only else None
 +        view = dict(account_key=key[0], environment=key[1], run_id=key[2],
              name=sources[0].get('label', sources[0]['deployment_id']), source_ids=[s['source_id'] for s in sources],
-@@ -221,8 +238,18 @@
+@@ -221,8 +254,18 @@
              observed_at=latest['observed_at_utc'] if latest else None, age_seconds=age,
 -            position_mode=mode, account=p, positions=positions, pools=list(pools.values()),
 +            position_mode=mode, account=p,

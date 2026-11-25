@@ -5,12 +5,12 @@ import type { Host, Point } from './fleet-types';
 
 type HealthPoint=Host['series'][number];
 type Reply = {
-  cursor:string; reset:boolean;
+  identity:string; cursor:string; reset:boolean;
   equity:[string,number,Point|null][];
   health:[number,HealthPoint|null][];
 };
-type History = { cursor:string; equity:Map<string,Map<number,Point>>; health:Map<number,HealthPoint>; failed:boolean };
-const blank=():History=>({cursor:'',equity:new Map(),health:new Map(),failed:false});
+type History = { identity:string; cursor:string; equity:Map<string,Map<number,Point>>; health:Map<number,HealthPoint>; failed:boolean };
+const blank=():History=>({identity:'',cursor:'',equity:new Map(),health:new Map(),failed:false});
 
 function change<T>(map:Map<number,T>,slot:number,value:T|null) {
   if(value===null)map.delete(slot);
@@ -27,7 +27,7 @@ export function applyHistory(previous:History, reply:Reply):History {
     else equity.delete(id);
   }
   for(const [slot,point] of reply.health) change(health,slot,point);
-  return {cursor:reply.cursor,equity,health,failed:false};
+  return {identity:reply.identity,cursor:reply.cursor,equity,health,failed:false};
 }
 
 export function useFleetHistory(serialHosts:string, hours:number) {
@@ -45,7 +45,10 @@ export function useFleetHistory(serialHosts:string, hours:number) {
       await Promise.all(ids.map(async id=>{
         const previous=hosts.get(id)!;
         const query=new URLSearchParams({host:id,hours:String(hours)});
-        if(previous.cursor)query.set('after',previous.cursor);
+        if(previous.cursor) {
+          query.set('after',previous.cursor);
+          query.set('identity',previous.identity);
+        }
         try {
           const response=await fetch('/api/fleet-control/history?'+query,{cache:'no-store',signal:controller.signal});
           if(!response.ok)throw new Error('History unavailable');

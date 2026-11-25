@@ -13,13 +13,13 @@ const {chromium,browserOptions}=require('./browser-runtime.cjs');
   const stamp=new Date(Date.now()-60000).toISOString();
   const slot=Math.floor(Date.parse(stamp)/300000)*300;
   const requests=[];
-  const baseline='a'.repeat(32),next='b'.repeat(32);
+  const baseline='a'.repeat(32),next='b'.repeat(32),identity='c'.repeat(64);
   let release;
   const historyGate=new Promise(resolve=>{release=resolve;});
   await page.route('**/api/local/session',route=>route.fulfill({json:{ok:true}}));
   await page.route('**/api/fleet-control/overview',route=>route.fulfill({json:{
    mode:'NATIVE',asOf:new Date().toISOString(),splitHistory:true,hosts:[{
-    id:'primary',name:'Test-VPS',historyIdentity:'v1',observedAt:stamp,state:'CURRENT',connection:'CURRENT',
+    id:'primary',name:'Test-VPS',historyIdentity:identity,observedAt:stamp,state:'CURRENT',connection:'CURRENT',
     cpu:15,cpuMax:20,ram:{percent:55,used:500,total:1000},volumes:[],attention:[],
     fleets:[{id:'primary.nova',hostId:'primary',name:'NOVA',broker:'Test',environment:'DEMO',
      state:'CURRENT',observedAt:stamp,freshSeconds:960,status:'RUNNING',balance:'1000.00',
@@ -31,7 +31,7 @@ const {chromium,browserOptions}=require('./browser-runtime.cjs');
    requests.push(Object.fromEntries(query));
    if(requests.length===1)await historyGate;
    const delta=query.has('after');
-   await route.fulfill({json:{cursor:delta?next:baseline,reset:!delta,health:[],
+   await route.fulfill({json:{identity,cursor:delta?next:baseline,reset:!delta,health:[],
     equity:[['primary.nova',slot,{at:stamp,value:delta?'1020.00':'1002.00'}]]}});
   });
   try{
@@ -45,7 +45,7 @@ const {chromium,browserOptions}=require('./browser-runtime.cjs');
    assert.deepEqual(requests[0],{host:'primary',hours:'24'});
    await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
    await page.locator('figcaption').getByText(/1\.020,00.*Beobachtungen/).waitFor();
-   assert.deepEqual(requests[1],{host:'primary',hours:'24',after:baseline});
+   assert.deepEqual(requests[1],{host:'primary',hours:'24',after:baseline,identity});
    await page.getByLabel('Beobachtungsfenster').selectOption('168');
    await page.locator('figcaption').getByText(/1\.002,00.*Beobachtungen/).waitFor();
    assert.deepEqual(requests[2],{host:'primary',hours:'168'});

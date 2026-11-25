@@ -9,11 +9,13 @@ export async function GET(request: Request) {
     const host=query.get('host') ?? '';
     const hours=query.get('hours');
     const after=query.get('after') ?? '';
-    if (Array.from(query.keys()).some(key=>!['host','hours','after'].includes(key) || query.getAll(key).length!==1) ||
+    const identity=query.get('identity') ?? '';
+    if (Array.from(query.keys()).some(key=>!['host','hours','after','identity'].includes(key) || query.getAll(key).length!==1) ||
         !/^[a-z0-9][a-z0-9_-]{0,79}$/.test(host) || (hours!=='24' && hours!=='168') ||
-        (query.has('after') && !/^[0-9a-f]{32}$/.test(after))) {
+        (query.has('after') && (!/^[0-9a-f]{32}$/.test(after) || !/^[0-9a-f]{64}$/.test(identity))) ||
+        (query.has('identity') && !/^[0-9a-f]{64}$/.test(identity))) {
       return Response.json({error:'Ungültiges Beobachtungsfenster oder Cursor.'},{status:400});
     }
-    return Response.json(await fleetHistory(host,Number(hours),after),{headers:{'Cache-Control':'no-store'}});
+    return Response.json(await fleetHistory(host,Number(hours),after,identity),{headers:{'Cache-Control':'no-store'}});
   });
 }

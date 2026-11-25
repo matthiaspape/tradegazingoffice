@@ -23,7 +23,9 @@ Mac-Backends. Die produktiven Laufzeiten sind ein eigener Aktivierungsschritt.
   Leserspeicher. Nach einem Reader-Neustart erfolgt ein neuer Vollabruf.
 - Office lädt die Historie separat, sobald eine Ansicht ihren Chart braucht.
   Positionshistorie und Issues nutzen weiterhin den vorhandenen Ereignis-Cursor
-  und werden nur im Flottendetail angefordert. Die vorhandenen M650-Routen
+  und werden nur im Flottendetail angefordert. Office bindet den Chart-Cursor
+  zusätzlich an die aktuelle Einsatzzuordnung. Ändert sie sich, wird das
+  angeforderte Fenster vollständig für die neue Zuordnung geladen. Die vorhandenen M650-Routen
   `/v1/desk`, `/v1/health`, `/v1/source-status` und `/v1/events` bleiben für
   bestehende Verbraucher verfügbar.
 

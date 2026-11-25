@@ -2,7 +2,7 @@ import { readFileSync, lstatSync } from 'node:fs';
 import { resolve, isAbsolute } from 'node:path';
 import { deskHome } from './config.mjs';
 import { DeskError } from './contract.mjs';
-import { accountMatch, projectHost } from './fleet-model.mjs';
+import { historyBindings, historyIdentity, projectHost } from './fleet-model.mjs';
 import { createEventStore, pullEvents, EVENT_LIMITS } from './fleet-events.mjs';
 import { REFRESH_WAIT_MS } from './fleet-timing.mjs';
 
@@ -127,37 +127,40 @@ export function createReader({fetcher=fetch, clock=Date.now, cache=new Map(), re
 const reader=createReader({cache:entries, events:true, split:true});
 export const fleetOverview = (loadJournal) => reader(loadSources(),loadJournal);
 
-export async function fleetHistory(id, hours, after) {
+export async function fleetHistory(id, hours, after, clientIdentity) {
   const host=loadSources().find(h=>h.id===id);
   if(!host) throw new DeskError('VPS ist nicht gebunden.',404);
   const stat=lstatSync(host.token_file);
   if(!stat.isFile() || (stat.mode&0o077))throw new DeskError('Historienzugang nicht verfügbar.',503);
   const token=readFileSync(host.token_file,'utf8').trim();
   if(!/^[A-Za-z0-9_-]{20,200}$/.test(token))throw new DeskError('Historienzugang nicht verfügbar.',503);
+  const entry=entries.get(host.id);
+  const accounts=entry?.signature===JSON.stringify(host)?entry.value?.desk?.accounts:undefined;
+  // Freeze the mapping before asking for an upstream revision. A concurrent overview
+  // refresh cannot change which deployment this reply and its cursor describe.
+  const bindings=historyBindings(host,accounts);
+  const identity=historyIdentity(bindings);
   const query=new URLSearchParams({hours:String(hours)});
-  if(after) query.set('after',after);
+  if(after && clientIdentity===identity) query.set('after',after);
   let payload;
   try {
     payload=await fetchJson(new URL('/v1/history?'+query,host.endpoint),token,fetch);
   } catch {
     throw new DeskError('Historie momentan nicht erreichbar.',503);
   }
-  if (payload.host_id!==host.native_host_id || typeof payload.reset!=='boolean' ||
+  if (payload.host_id!==host.native_host_id || typeof payload.reset!=='boolean' || (!query.has('after') && !payload.reset) ||
       !/^[0-9a-f]{32}$/.test(payload.cursor) || !Array.isArray(payload.equity) || !Array.isArray(payload.health)) {
     throw new DeskError('Historie passt nicht zur gebundenen Quelle.',503);
   }
-  const accounts=entries.get(host.id)?.value?.desk?.accounts ?? [];
   const equity=[];
   for (const [scope,slot,point] of payload.equity) {
     const [account_key,environment,run_id,deployment_id]=scope;
-    for (const binding of host.bindings) {
-      const account=accounts.find(a=>accountMatch(a,binding));
-      const actualDeployment=account?.deployment_id ?? binding.deployment_id;
+    for (const binding of bindings) {
       if (account_key===binding.account_key && environment===binding.environment &&
-          run_id===(binding.run_id??null) && deployment_id===actualDeployment) {
+          run_id===(binding.run_id??null) && deployment_id===binding.nativeDeployment) {
         equity.push([`${host.id}.${binding.id}`,slot,point]);
       }
     }
   }
-  return {cursor:payload.cursor,reset:payload.reset,equity,health:payload.health};
+  return {identity,cursor:payload.cursor,reset:payload.reset,equity,health:payload.health};
 }

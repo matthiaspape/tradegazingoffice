@@ -7,13 +7,14 @@ import sqlite3
 from tempfile import TemporaryDirectory
 from threading import Thread
 import unittest
+from unittest.mock import patch
 from urllib.parse import urlencode
 
 from fleet_desk.collector import Service
 from fleet_desk.health import Store
 from fleet_desk.mac_desk import MacBackend
 from fleet_desk.server import server
-from fleet_desk.sync import History
+from fleet_desk.sync import History, current
 
 
 class SplitFleetIntegration(unittest.TestCase):
@@ -125,6 +126,29 @@ class SplitFleetIntegration(unittest.TestCase):
         self.assertEqual(stale['accounts'][0]['observed_at'], account['accounts'][0]['observed_at'])
         self.assertEqual(healthy['connection']['state'], 'CURRENT')
         self.assertEqual(healthy['windows'][-1]['last']['available_ram'], 400)
+
+    def test_current_materializes_only_latest_auxiliary_rows(self):
+        self.original('account', -5, equity='1000', positions=0)
+        for i in range(800):
+            self.original(f'pool-{i}', -900 + i, 'pool_snapshot', pool='pool-a', risk=str(i))
+            self.original(f'v1-{i}', -900 + i, 'variant_snapshot', pool='pool-a', revision='v1')
+            self.original(f'hb-{i}', -900 + i, 'telemetry_health', source_state='RUNNING')
+        self.original('v2', -1000, 'variant_snapshot', pool='pool-a', revision='v2')
+        original_loads = json.loads
+        loaded = []
+        def capture(raw, *args, **kwargs):
+            row = original_loads(raw, *args, **kwargs)
+            if isinstance(row, dict) and row.get('record_type'):
+                loaded.append(row['record_type'])
+            return row
+        with patch('fleet_desk.projection.json.loads', side_effect=capture):
+            account = current(self.config, 'desk')['accounts'][0]
+        self.assertEqual(len(account['pools']), 1)
+        self.assertEqual(account['pools'][0]['payload']['risk'], '799')
+        self.assertEqual(len(account['variants']), 2)
+        self.assertEqual(loaded.count('pool_snapshot'), 1)
+        self.assertEqual(loaded.count('variant_snapshot'), 2)
+        self.assertEqual(loaded.count('telemetry_health'), 1)
 
     def test_full_then_incremental_and_correction_upserts(self):
         self.original('yesterday', -90000, equity='999')

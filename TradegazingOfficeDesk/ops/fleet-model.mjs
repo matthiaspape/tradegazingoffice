@@ -114,6 +114,19 @@ export function accountMatch(a, b) {
   return a.account_key === b.account_key && a.environment === b.environment && (a.run_id ?? null) === (b.run_id ?? null)
     && (a.deployment_id === b.deployment_id || items(a.fleet).some(r => r.deployment_id === b.deployment_id));
 }
+export function historyBindings(host, accounts = []) {
+  return host.bindings.map(binding=>({
+    ...binding,
+    nativeDeployment: accounts.find(account=>accountMatch(account,binding))?.deployment_id ?? binding.deployment_id,
+  }));
+}
+
+export function historyIdentity(bindings) {
+  return createHash('sha256').update(JSON.stringify(bindings.map(binding=>[
+    binding.id,binding.account_key,binding.environment,binding.run_id??null,binding.nativeDeployment,
+  ]))).digest('hex');
+}
+
 export function fleetModel(binding, accounts, host, now, offline, store) {
   const matches = items(accounts).filter(a => accountMatch(a, binding));
   const a = matches.length === 1 ? matches[0] : null;
@@ -162,17 +175,13 @@ export function projectHost(host, bundle, now, transport = {}, store = null) {
   const deskOffline = !deskValid || transport.failed === true || transport.deskFailed === true || bundle?.desk?.connection?.state === 'STALE';
   const healthOffline = !valid || transport.failed === true || transport.healthFailed === true || bundle?.health?.connection?.state === 'STALE'
     || (!transport.split && deskOffline);
-  const historyIdentity = transport.split && createHash('sha256').update(JSON.stringify(host.bindings.map(binding=>[
-    binding.id, binding.account_key, binding.environment,binding.run_id??null,
-    bundle?.desk?.accounts?.find(account=>accountMatch(account,binding))?.deployment_id??binding.deployment_id
-  ]))).digest('hex');
   return {
     id: host.id, name: host.name, ip: host.ip || null,
     ...health, state: healthOffline && health.state === 'CURRENT' ? 'STALE' : health.state,
     connection: !valid ? 'UNAVAILABLE' : healthOffline ? 'STALE' : 'CURRENT',
     lastPull: bundle?.health?.connection?.last_success_at ?? null,
     ...(transport.split ? {
-      historyIdentity,
+      historyIdentity:historyIdentity(historyBindings(host,deskValid?bundle.desk.accounts:[])),
       deskConnection: !deskValid ? 'UNAVAILABLE' : deskOffline ? 'STALE' : 'CURRENT',
       deskLastPull: bundle?.desk?.connection?.last_success_at ?? null,
     } : {}),
