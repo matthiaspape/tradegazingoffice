@@ -1,0 +1,52 @@
+--- a/fleet_desk/mac_desk.py
++++ b/fleet_desk/mac_desk.py
+@@ -18,2 +18,31 @@
+ 
++# Only the current Health GET adds metadata from the existing authenticated SSH identity.
++# Send PID, native start time and the path-derived number without the executable path.
++MT5_SLOT_METADATA = r'''
++$slots=@()
++try {
++    $slots=@(Get-CimInstance Win32_Process -Filter "Name='terminal64.exe' OR Name='terminal.exe'" -OperationTimeoutSec 3 | ForEach-Object {
++        $path=[string]$_.ExecutablePath
++        if ($_.CreationDate -and [IO.Path]::IsPathRooted($path) -and
++            $path -match '(?:^|[\\/])MetaTrader 5 Slot ?([1-9][0-9]{0,8})[\\/]terminal(?:64)?\.exe$') {
++            @{pid=[int]$_.ProcessId; started_at=$_.CreationDate.ToUniversalTime().ToString('o'); slot=[int]$Matches[1]}
++        }
++    })
++} catch {
++    $slots=@()
++}
++[Console]::WriteLine((ConvertTo-Json -InputObject $slots -Compress))
++'''
++
++
++def apply_current_slots(health, metadata):
++    slots = {(p['pid'], p['started_at']): p['slot'] for p in metadata}
++    for window in health.get('windows', []):
++        for process in window.get('last', {}).get('processes', []):
++            slot = slots.get((process.get('pid'), process.get('started_at')))
++            if slot is not None:
++                process['mt5_slot'] = slot
++    return health
++
++
+ class VpsUnavailable(OSError):
+@@ -34,2 +63,3 @@
+         direct = endpoint and endpoint.startswith(('/v1/current?', '/v1/history?'))
++        include_slots = endpoint == '/v1/current?part=health'
+         # Both the bearer key and the script go through encrypted SSH stdin,
+@@ -48,2 +78,4 @@
+             script += "$reply=Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:8765"+endpoint+"' -Headers $headers -TimeoutSec "+str(timeout)+"\n"
++            if include_slots:
++                script += MT5_SLOT_METADATA
+             script += "[Console]::Write($reply.Content)\n"
+@@ -60,3 +92,7 @@
+                 input=wrapper.encode(), capture_output=True, timeout=30, check=True)
+-            return json.loads(result.stdout.decode('utf-8-sig'))
++            output = result.stdout.decode('utf-8-sig')
++            if include_slots:
++                metadata, output = output.split('\n', 1)
++                return apply_current_slots(json.loads(output), json.loads(metadata))
++            return json.loads(output)
+         except (OSError, ValueError, subprocess.SubprocessError) as error:

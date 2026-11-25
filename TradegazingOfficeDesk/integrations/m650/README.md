@@ -77,6 +77,17 @@ Status. Der Desk erhält nur den Slot und keine Programmpfade.
 Der Patch wird nach `current-history.patch` in einer isolierten Kopie
 angewendet. Prüfen mit `PYTHONPATH="$PWD" python3 -B
 /absoluter/pfad/test_mt5_slot_display.py`. Die produktive Anzeige
-benötigt den aktualisierten Windows-Collector und den Office-Build.
-Mac-Datenbackend und VPS-Reader übertragen das vorhandene Health-Format
-einschließlich des zusätzlichen Feldes.
+benötigt den aktualisierten Office-Build und einen Health-Weg, der
+den MT5-Pfad lesen darf. Der VPS-Reader reicht das zusätzliche Feld im
+bisherigen Health-Format weiter.
+
+Unter `LOCAL SERVICE` hat der Windows-Collector im produktiven
+Dienstkontext keinen Zugriff auf den MT5-Programmpfad (OFFICE-BUG-0046).
+Der bestehende SSH-Lesezugang kann ihn ermitteln. Der
+[Mac-Patch](mt5-slot-mac-ssh.patch) ergänzt deshalb ausschließlich den
+aktuellen Health-Abruf. Windows sendet die Slotnummer, PID und native
+Startzeit. Der Mac ergänzt den Slot nur bei identischer Prozessinstanz.
+Der Programmpfad bleibt auf Windows. Nach einem Fehler der Zusatzabfrage
+bleiben die übrigen Health-Daten verfügbar. Der Mac-Patch setzt auf
+`current-history.patch` auf und benötigt eine gesondert freigegebene
+Aktivierung des Mac-Datenbackends.
