@@ -3,7 +3,7 @@
 Office-Mission 22. Der M650-Leser liegt in einem separaten Arbeitsstand. Die
 versionierte [Änderung](current-history.patch) wird dort auf eine isolierte
 Kopie der M650-App angewendet. Sie ändert die Python-Dateien des Lesers und
-Mac-Backends. Die produktiven Laufzeiten sind ein eigener Aktivierungsschritt.
+Mac-Backends. Die Aktivierung der produktiven Laufzeiten ist gesondert freigegeben.
 
 - `GET /v1/current?part=desk` liefert den Konto- und Flottenstand am neuesten
   nativen Kontozeitpunkt. Offene Positionen stammen aus genau dieser Aufnahme.
@@ -50,3 +50,17 @@ das Mac-Datenbackend und danach der Office-Build. Die bestehenden
 Collector-Datenbanken, Aufbewahrungsregeln und MT5-Prozesse werden für diese
 Änderung weiterverwendet. Die Patch-Anwendbarkeit gegen die konkreten
 staging-Kopien gehört zur Vorbereitung dieser Aktivierung.
+
+
+## Produktiver Betrieb ab 25.11.2026
+
+Auf Nutzerfreigabe wurde Build `6e40574f5585` in der Reihenfolge VPS-Reader,
+Mac-Datenbackend und Office Desk aktiviert. Der reguläre authentisierte
+Office-Abruf lieferte NOVA und VPS-Health als aktuell und nativ. Die
+NOVA-Beobachtung war von 21:37:46 MEZ, die VPS-Messung von 21:38:04 MEZ.
+Der erste Sieben-Tage-Abruf lieferte 1.790 Equity-Punkte und 1.988
+Health-Fenster in 3,54 Sekunden. Der unmittelbar folgende Cursor-Abruf
+enthielt keine geänderten Punkte und lieferte 161 Byte in 2,32 Sekunden.
+Dies ist die Betriebsquittung der betroffenen Schnittstellen.
+Die Review-Restpunkte und Rückrollpfade stehen in
+[Office-Mission 22](http://127.0.0.1:43120/missions/22fca50c-fdbb-4483-b15f-96cf5595bf73).

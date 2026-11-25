@@ -772,3 +772,7 @@ Preise, Tarifgrenzen, Bankfeeds, API-Rechte und Client-Funktionen können sich �
 | 0.4 / 03.10.2026 | VPN als optionale Transportwahl präzisiert; geschütztes öffentliches HTTPS und zusätzliche gerätebezogene App-Entschlüsselung dokumentiert; Herkunft, Klartextgrenzen, Mehrgerätezugriff, Schlüsselverlust und Wiederherstellung ergänzt |
 | 0.5 / 03.10.2026 | Damalige Pinning-Option ergänzt, ab Version 0.6 auf Nutzerentscheidung verworfen; JSON/GZIP gegenüber ZIP-Exporten eingeordnet; Kompression vor App-Verschlüsselung und kontrolliertes Entpacken dokumentiert |
 | 0.6 / 03.10.2026 | Certificate/Public-Key-Pinning auf Nutzerentscheidung wegen zusätzlicher Komplexität verworfen; zugehörige Planungs- und Abnahmeschritte entfernt; HTTPS-Zertifikatsprüfung und Geräteautorisierung beibehalten |
+
+### Ergänzung vom 25.11.2026 zur Fleet-Control-Datenkette
+
+Der produktive Office Desk nutzt unabhängige aktuelle Lesewege für Flottenzustand und VPS-Health. Der Chart lädt das angeforderte Fenster bei Bedarf vollständig und danach Änderungen über einen Cursor. Die Zuordnung des Flotteneinsatzes bindet den Office-Cursor. Der vorhandene M650-Collector und dessen Aufbewahrung liefern weiterhin die Originaldaten. [Schnittstellen und Betriebsbeleg](TradegazingOfficeDesk/integrations/m650/README.md).

@@ -8,7 +8,7 @@ Lokales Desk für Controlling und Projektmanagement mit dem originalen Tradegazi
 
 Das [gemeinsame UI/UX-Zielbild](../docs/TradegazingOfficeDeskUX.md) beschreibt die Gestaltung und den verbleibenden Ausbau. Der [Umsetzungsnachweis](docs/FLEET_DEMO_VALIDATION.md) hält Umfang, Prüfung und Review fest.
 
-Der getrennte [Abruf von aktuellem Stand und Historie per Cursor](integrations/m650/README.md) ist als isoliert prüfbarer Entwicklungsstand dokumentiert.
+Der getrennte [Abruf von aktuellem Stand und Historie per Cursor](integrations/m650/README.md) ist seit 25.11.2026 im regulären Office Desk aktiv.
 
 ## Start
 
