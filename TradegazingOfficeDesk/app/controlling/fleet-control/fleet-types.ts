@@ -19,7 +19,7 @@ export type Host = {
  cpu:number|null;cpuMax:number|null;ram:{total:number|null;used:number|null;percent:number|null};volumes:Volume[];
  samples:number|null;cpuSamples:number|null;expected:number|null;attention:string[];waitingForEa:boolean;unboundAccounts:number;
  series:{at:string;cpu:number|null;ram:number|null;volumes:Volume[]}[];
- processes:{pid:number|null;startedAt:string;terminal:string;binding:string;cpu:number|null;workingSet:number|null;privateBytes:number|null}[];
+ processes:{pid:number|null;startedAt:string;terminal:string;binding:string;mt5Slot?:number|null;cpu:number|null;workingSet:number|null;privateBytes:number|null}[];
  fleets:Fleet[];
 };
 export type Overview = {mode:'NATIVE'|'DEMO';asOf:string;hosts:Host[];refreshing?:boolean;splitHistory?:boolean};

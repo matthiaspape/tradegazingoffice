@@ -66,6 +66,22 @@ function sample({state='CURRENT',connection='CURRENT'}={}){
     }finally{await p.close();}
    }
   });
+  await check('VPS process labels use the MT5 slot even after a PID change',async()=>{
+   const {p,mount}=await page('?test-vps=test');
+   try{
+    const data=sample();
+    data.hosts[0].processes=[
+     {pid:4528,startedAt:data.asOf,terminal:'',binding:'UNBOUND',mt5Slot:1,cpu:2,workingSet:100,privateBytes:80},
+     {pid:5244,startedAt:data.asOf,terminal:'native-terminal-id',binding:'BOUND',mt5Slot:12,cpu:1,workingSet:90,privateBytes:70},
+     {pid:200,startedAt:data.asOf,terminal:'',binding:'COLLECTOR',cpu:1,workingSet:75,privateBytes:50},
+     {pid:210,startedAt:data.asOf,terminal:'',binding:'UNBOUND',mt5Slot:null,cpu:1,workingSet:70,privateBytes:50}
+    ];
+    await p.route(endpoint,r=>r.fulfill({json:data}));await mount();
+    const processTable=p.getByRole('heading',{name:'MT5-Prozesse & Collector'}).locator('..').getByRole('table');
+    await processTable.getByRole('cell',{name:'Slot 1',exact:true}).waitFor();
+    assert.deepEqual(await processTable.locator('tbody tr td:first-child').allInnerTexts(),['Slot 1','Slot 12','Collector','Slot unbekannt']);
+   }finally{await p.close();}
+  });
   for(const detail of ['vps','fleet'])await check(`0033: ${detail} demo detail explicitly labels fictional data`,async()=>{
    const {p,mount,sessions}=await page(detail==='vps'?'?mode=demo&test-vps=atlas':'?mode=demo&test-fleet=nova');
    try{

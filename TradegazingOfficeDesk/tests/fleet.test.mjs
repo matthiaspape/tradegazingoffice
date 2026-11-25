@@ -26,6 +26,12 @@ test('health chooses newest observation per slot across sessions; end values use
  assert.equal(model.cpu,70);assert.equal(model.series.length,1);assert.equal(model.ram.percent,60);assert.equal(model.volumes[0].percent,75);
  assert.equal(model.observedAt,at(-10));assert.equal(model.cpuSamples,11);
 });
+test('host projection keeps the measured MT5 slot even when the process is unbound',()=>{
+ const w=window(-10);
+ w.last.processes=[{pid:4528,binding:'UNBOUND',mt5_slot:1},{pid:6000,binding:'COLLECTOR'},{pid:6500,binding:'UNBOUND',mt5_slot:'2'}];
+ const result=healthModel({windows:[w]},now);
+ assert.deepEqual(result.processes.map(p=>[p.binding,p.mt5Slot]),[['UNBOUND',1],['COLLECTOR',null],['UNBOUND',null]]);
+});
 test('invalid/future/expired health cannot become current and missing numeric fields never become zero',()=>{
  const w=window(-10);w.last.available_ram=null;w.last.volumes[0].free='3000';
  const model=healthModel({windows:[w,window(-8*86400)]},now);

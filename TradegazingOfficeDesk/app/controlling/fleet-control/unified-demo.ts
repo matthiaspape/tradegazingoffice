@@ -9,7 +9,7 @@ export function demoOverview(): Overview {
   cpu:index?78:38,cpuMax:index?86:45,ram:{total:12*1024**3,used:6*1024**3,percent:50},
   volumes:[{name:'C:',total:160*1024**3,used:64*1024**3,percent:40}],samples:20,cpuSamples:20,expected:20,attention:[],waitingForEa:false,unboundAccounts:0,
   series:Array.from({length:12},(_,i)=>({at:new Date(Date.parse(asOf)-(11-i)*300000).toISOString(),cpu:(index?70:30)+i%9,ram:45+i%6,volumes:[{name:'C:',total:160*1024**3,used:(60+i/3)*1024**3,percent:(60+i/3)/160*100}]})),
-  processes:[{pid:4120,startedAt:'2026-11-12T07:00:00Z',terminal:'Demo-Terminal',binding:'BOUND',cpu:8.2,workingSet:620*1024**2,privateBytes:510*1024**2}],fleets:[]
+  processes:[{pid:4120,startedAt:'2026-11-12T07:00:00Z',terminal:'Demo-Terminal',binding:'BOUND',mt5Slot:1,cpu:8.2,workingSet:620*1024**2,privateBytes:510*1024**2}],fleets:[]
  }));
  demoFleets.forEach((source,i)=>{
   const h=hosts[i===2?1:0], values=examples[i], observedAt=i===2?'2026-11-14T10:25:00Z':asOf;

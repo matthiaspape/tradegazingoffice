@@ -107,7 +107,7 @@ export function healthModel(raw, now) {
     samples: numeric(latest?.samples), cpuSamples: numeric(latest?.cpu_samples), expected: numeric(latest?.expected_samples),
     attention: items(raw?.attention).filter(v => typeof v === 'string').map(text),
     series: windows.map(w => ({at: w.last.observed_at, cpu: pct(w.cpu_mean), ram: ram(w.last).percent, volumes: items(w.last.volumes).map(volume)})),
-    processes: items(sample.processes).map(p => ({pid: numeric(p.pid), startedAt: text(p.started_at), terminal: text(p.terminal_id), binding: text(p.binding), cpu: pct(p.cpu_percent_of_vps), workingSet: numeric(p.working_set), privateBytes: numeric(p.private_bytes)})),
+    processes: items(sample.processes).map(p => ({pid: numeric(p.pid), startedAt: text(p.started_at), terminal: text(p.terminal_id), binding: text(p.binding), mt5Slot: Number.isSafeInteger(p.mt5_slot) && p.mt5_slot > 0 ? p.mt5_slot : null, cpu: pct(p.cpu_percent_of_vps), workingSet: numeric(p.working_set), privateBytes: numeric(p.private_bytes)})),
   };
 }
 export function accountMatch(a, b) {

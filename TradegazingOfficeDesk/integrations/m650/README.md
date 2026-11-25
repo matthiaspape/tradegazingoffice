@@ -64,3 +64,19 @@ enthielt keine geänderten Punkte und lieferte 161 Byte in 2,32 Sekunden.
 Dies ist die Betriebsquittung der betroffenen Schnittstellen.
 Die Review-Restpunkte und Rückrollpfade stehen in
 [Office-Mission 22](http://127.0.0.1:43120/missions/22fca50c-fdbb-4483-b15f-96cf5595bf73).
+
+## MT5-Slots in der VPS-Prozessliste
+
+Office-Mission 23 ergänzt am M650-Collector mit dem
+[Slot-Patch](mt5-slot-display.patch) ein numerisches Feld aus dem
+gemessenen MT5-Programmpfad. Zum Beispiel wird `MetaTrader 5 Slot1` zu
+`Slot 1`. Ist im Pfad kein Slot erkennbar, zeigt die Prozessliste
+„Slot unbekannt“. Die strikte EA-/Kontozuordnung bleibt ein eigener
+Status. Der Desk erhält nur den Slot und keine Programmpfade.
+
+Der Patch wird nach `current-history.patch` in einer isolierten Kopie
+angewendet. Prüfen mit `PYTHONPATH="$PWD" python3 -B
+/absoluter/pfad/test_mt5_slot_display.py`. Die produktive Anzeige
+benötigt den aktualisierten Windows-Collector und den Office-Build.
+Mac-Datenbackend und VPS-Reader übertragen das vorhandene Health-Format
+einschließlich des zusätzlichen Feldes.

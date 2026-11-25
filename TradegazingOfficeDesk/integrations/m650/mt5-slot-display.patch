@@ -1,0 +1,25 @@
+--- a/fleet_desk/health.py
++++ b/fleet_desk/health.py
+@@ -4,3 +4,4 @@
+ import os
+-from pathlib import Path
++from pathlib import Path, PureWindowsPath
++import re
+ import sqlite3
+@@ -54,2 +55,12 @@
+ 
++def mt5_slot(executable):
++    if not isinstance(executable, str) or not executable:
++        return None
++    path = PureWindowsPath(executable)
++    if not path.is_absolute() or path.name.casefold() not in ('terminal64.exe', 'terminal.exe'):
++        return None
++    match = re.fullmatch(r'MetaTrader 5 Slot ?([1-9][0-9]*)', path.parent.name, re.IGNORECASE)
++    return int(match[1]) if match else None
++
++
+ def normalize(raw, previous, config):
+@@ -84,2 +95,3 @@
+         processes.append(dict(pid=p['pid'], started_at=p['started_at'],
++            mt5_slot=mt5_slot(p.get('executable')),
+             terminal_id=matches[0]['terminal_id'] if len(matches) == 1 else None,
