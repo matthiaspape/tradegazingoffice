@@ -91,3 +91,9 @@ Der Programmpfad bleibt auf Windows. Nach einem Fehler der Zusatzabfrage
 bleiben die übrigen Health-Daten verfügbar. Der Mac-Patch setzt auf
 `current-history.patch` auf und benötigt eine gesondert freigegebene
 Aktivierung des Mac-Datenbackends.
+
+Seit 26.11.2026 nutzt der reguläre Mac-Datenleser diesen SSH-Leseweg
+für die Slotanzeige. Nach freigegebenem Neustart des Mac-Datenbackends
+lieferte der authentisierte Office-Abruf für die Hostmessung von
+09:44:48 MEZ **Slot 1** und VPS-Health als aktuell.
+[Betriebsbeleg in Office-Mission 23](http://127.0.0.1:43120/missions/6069e4c6-e882-48c9-ac49-4d1ef17c96d2)
