@@ -1,5 +1,5 @@
 diff --git a/fleet_desk/mac_desk.py b/fleet_desk/mac_desk.py
-index 74ebc32..4144407 100644
+index 74ebc32..6843683 100644
 --- a/fleet_desk/mac_desk.py
 +++ b/fleet_desk/mac_desk.py
 @@ -7,6 +7,7 @@ import json
@@ -10,7 +10,7 @@ index 74ebc32..4144407 100644
  import threading
  import time
  from urllib.parse import urlencode
-@@ -130,7 +131,7 @@ class CurrentRead:
+@@ -130,14 +131,18 @@ class CurrentRead:
      def __init__(self, part, transport, clock, refresh_seconds):
          self.part, self.transport, self.clock = part, transport, clock
          self.refresh_seconds = refresh_seconds
@@ -18,8 +18,21 @@ index 74ebc32..4144407 100644
 +        self.value = self.last_success = self.last_attempt = self.retry_at = None
          self.lock = threading.Lock()
  
-     def snapshot(self):
-@@ -145,8 +146,16 @@ class CurrentRead:
+-    def snapshot(self):
++    def snapshot(self, background=False):
+         with self.lock:
+             now = self.clock()
+             stale = self.last_attempt != self.last_success
+-            if self.last_attempt is None or now - self.last_attempt >= (30 if stale else self.refresh_seconds):
++            due = self.last_attempt is None or now - self.last_attempt >= (30 if stale else self.refresh_seconds)
++            # The background collector also honours the retry deadline set by the end of any failed read.
++            if background and stale and self.retry_at is not None and now < self.retry_at:
++                due = False
++            if due:
+                 self.last_attempt = now
+                 try:
+                     value = self.transport.fetch('/v1/current?' + urlencode(dict(part=self.part)))
+@@ -145,8 +150,16 @@ class CurrentRead:
                      if not isinstance(value, dict) or not isinstance(value.get(field), list):
                          raise VpsUnavailable('VPS-Antwort unvollständig')
                      self.value, self.last_success = value, now
@@ -38,7 +51,7 @@ index 74ebc32..4144407 100644
              if self.value is None or now - self.last_success > 7 * 86400:
                  self.value = None
                  raise VpsUnavailable('Noch kein erreichbarer VPS-Datenstand')
-@@ -156,6 +165,15 @@ class CurrentRead:
+@@ -156,6 +169,15 @@ class CurrentRead:
                  last_attempt_at=datetime.fromtimestamp(self.last_attempt, timezone.utc).isoformat(),
                  client_location='MAC', transport='AUTOMATIC_SSH_READ'))
  
@@ -54,7 +67,16 @@ index 74ebc32..4144407 100644
  
  class MacBackend:
      def __init__(self, settings, transport=None, clock=time.time):
-@@ -254,7 +272,7 @@ def main():
+@@ -243,7 +265,7 @@ def main():
+     def collect(part):
+         while not stop.is_set():
+             try:
+-                backend.current_reads[part].snapshot()
++                backend.current_reads[part].snapshot(background=True)
+             except VpsUnavailable:
+                 pass
+             # Mac stores no permanent trading/health cache; only its dated logs.
+@@ -254,7 +276,7 @@ def main():
                          path.unlink()
                  except OSError:
                      pass

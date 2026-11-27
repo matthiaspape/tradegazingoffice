@@ -77,6 +77,21 @@ class CurrentRefreshTests(unittest.TestCase):
             self.assertEqual(self.read.snapshot()['connection']['state'], 'STALE')
         self.assertEqual(self.read.wait_seconds(), 30)
 
+    def test_background_waits_for_retry_deadline_of_an_overlapping_request_failure(self):
+        self.read.snapshot()
+        self.clock.now = 1300
+        self.transport.fail, self.transport.duration = True, 30
+        with redirect_stderr(io.StringIO()):
+            self.read.snapshot(background=True)          # fails 1300..1330, retry_at 1360
+            self.clock.now = 1331
+            self.read.snapshot()                         # request fails 1331..1361, retry_at 1391
+        calls = self.transport.calls
+        self.clock.now = 1361                            # background wake delayed by the lock
+        with redirect_stderr(io.StringIO()):
+            self.read.snapshot(background=True)
+        self.assertEqual(self.transport.calls, calls)
+        self.assertEqual(self.read.wait_seconds(), 30)
+
     def test_requests_in_between_never_make_the_background_skip_a_cycle(self):
         # Background loop follows wait_seconds(); requests arrive at arbitrary times.
         requests = [1290.0, 1301.0, 1599.0, 1605.0, 2207.0, 2210.0, 3100.0]
@@ -90,7 +105,7 @@ class CurrentRefreshTests(unittest.TestCase):
                     refreshes.append(self.clock.now)
             self.clock.now = wake
             before = self.transport.calls
-            self.read.snapshot()
+            self.read.snapshot(background=True)
             if self.transport.calls > before:
                 refreshes.append(self.clock.now)
             wake = self.clock.now + self.read.wait_seconds()
