@@ -1,0 +1,51 @@
+diff --git a/fleet_desk/mac_desk.py b/fleet_desk/mac_desk.py
+index 74ebc32..6b9bf91 100644
+--- a/fleet_desk/mac_desk.py
++++ b/fleet_desk/mac_desk.py
+@@ -7,6 +7,7 @@ import json
+ from pathlib import Path
+ import re
+ import subprocess
++import sys
+ import threading
+ import time
+ from urllib.parse import urlencode
+@@ -145,8 +146,11 @@ class CurrentRead:
+                     if not isinstance(value, dict) or not isinstance(value.get(field), list):
+                         raise VpsUnavailable('VPS-Antwort unvollständig')
+                     self.value, self.last_success = value, now
+-                except OSError:
+-                    pass
++                except OSError as error:
++                    # Recorded in the dated reader log; the cause names the transport step, never the key.
++                    cause = error.__cause__ or error
++                    print(f'{datetime.now(timezone.utc).isoformat()} current {self.part} refresh failed: '
++                          f'{type(cause).__name__}: {str(cause)[:300]}', file=sys.stderr, flush=True)
+             if self.value is None or now - self.last_success > 7 * 86400:
+                 self.value = None
+                 raise VpsUnavailable('Noch kein erreichbarer VPS-Datenstand')
+@@ -156,6 +160,15 @@ class CurrentRead:
+                 last_attempt_at=datetime.fromtimestamp(self.last_attempt, timezone.utc).isoformat(),
+                 client_location='MAC', transport='AUTOMATIC_SSH_READ'))
+ 
++    def wait_seconds(self):
++        # The background loop wakes exactly when the next read is due (30 s after a failure),
++        # so a read triggered by a request in between never makes it skip a whole cycle.
++        with self.lock:
++            if self.last_attempt is None:
++                return 0.0
++            interval = 30 if self.last_attempt != self.last_success else self.refresh_seconds
++            return min(self.refresh_seconds, max(1.0, self.last_attempt + interval - self.clock()))
++
+ 
+ class MacBackend:
+     def __init__(self, settings, transport=None, clock=time.time):
+@@ -254,7 +267,7 @@ def main():
+                         path.unlink()
+                 except OSError:
+                     pass
+-            stop.wait(settings.get('refresh_seconds',300))
++            stop.wait(backend.current_reads[part].wait_seconds())
+     for part in backend.current_reads:
+         threading.Thread(target=collect, args=(part,), daemon=True).start()
+     web = server(settings, host='127.0.0.1', port=settings.get('port',8766), backend=backend)

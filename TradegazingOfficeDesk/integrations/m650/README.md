@@ -97,3 +97,18 @@ für die Slotanzeige. Nach freigegebenem Neustart des Mac-Datenbackends
 lieferte der authentisierte Office-Abruf für die Hostmessung von
 09:44:48 MEZ **Slot 1** und VPS-Health als aktuell.
 [Betriebsbeleg in Office-Mission 23](http://127.0.0.1:43120/missions/6069e4c6-e882-48c9-ac49-4d1ef17c96d2)
+
+## Verlässlicher Hintergrundabruf des aktuellen Stands
+
+Office-Mission 24 (OFFICE-BUG-0031). Der Mac-Hintergrundabruf rief den
+aktuellen Flotten- und Health-Stand in einem festen 300-s-Takt ab und
+erneuerte nur, wenn seit dem letzten Abruf 300 s vergangen waren. Hatte
+eine Office-Anfrage dazwischen abgerufen, übersprang der Takt eine Runde;
+der Flottenstand alterte bis etwa 10 Minuten. Fehlschläge wurden ohne Log
+verworfen und erst nach weiteren 300 s wiederholt.
+
+Der [Patch](current-refresh.patch) setzt auf `mt5-slot-mac-ssh.patch` auf.
+Der Hintergrundabruf wartet jetzt genau bis zur nächsten Fälligkeit
+(nach einem Fehlschlag 30 s). Jeder Fehlschlag steht mit Teil und Ursache,
+ohne Schlüssel, im datierten Reader-Log. Prüfen mit
+`PYTHONPATH="$PWD" python3 -B /absoluter/pfad/test_current_refresh.py`.
