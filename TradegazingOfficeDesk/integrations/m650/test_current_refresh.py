@@ -14,11 +14,13 @@ class Clock:
 
 
 class Transport:
-    def __init__(self):
-        self.calls, self.fail = 0, False
+    def __init__(self, clock=None):
+        self.calls, self.fail, self.clock, self.duration = 0, False, clock, 0
 
     def fetch(self, endpoint):
         self.calls += 1
+        if self.clock is not None:
+            self.clock.now += self.duration
         if self.fail:
             try:
                 raise TimeoutError('ssh timed out after 30 s')
@@ -29,7 +31,8 @@ class Transport:
 
 class CurrentRefreshTests(unittest.TestCase):
     def setUp(self):
-        self.clock, self.transport = Clock(), Transport()
+        self.clock = Clock()
+        self.transport = Transport(self.clock)
         self.read = CurrentRead('desk', self.transport, self.clock, 300)
 
     def test_wait_until_next_due_read(self):
@@ -54,6 +57,25 @@ class CurrentRefreshTests(unittest.TestCase):
         self.transport.fail = False
         self.clock.now += 30
         self.assertEqual(self.read.snapshot()['connection']['state'], 'CURRENT')
+
+    def test_slow_failure_still_waits_30_seconds_after_it_ended(self):
+        self.read.snapshot()
+        self.clock.now += 300
+        self.transport.fail, self.transport.duration = True, 30
+        with redirect_stderr(io.StringIO()):
+            self.read.snapshot()
+        self.assertEqual(self.read.wait_seconds(), 30)
+
+    def test_log_write_failure_keeps_cached_response(self):
+        class Broken(io.StringIO):
+            def write(self, value):
+                raise OSError('disk full')
+        self.read.snapshot()
+        self.clock.now += 300
+        self.transport.fail = True
+        with redirect_stderr(Broken()):
+            self.assertEqual(self.read.snapshot()['connection']['state'], 'STALE')
+        self.assertEqual(self.read.wait_seconds(), 30)
 
     def test_requests_in_between_never_make_the_background_skip_a_cycle(self):
         # Background loop follows wait_seconds(); requests arrive at arbitrary times.

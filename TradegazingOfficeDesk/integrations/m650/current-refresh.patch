@@ -1,5 +1,5 @@
 diff --git a/fleet_desk/mac_desk.py b/fleet_desk/mac_desk.py
-index 74ebc32..6b9bf91 100644
+index 74ebc32..4144407 100644
 --- a/fleet_desk/mac_desk.py
 +++ b/fleet_desk/mac_desk.py
 @@ -7,6 +7,7 @@ import json
@@ -10,21 +10,35 @@ index 74ebc32..6b9bf91 100644
  import threading
  import time
  from urllib.parse import urlencode
-@@ -145,8 +146,11 @@ class CurrentRead:
+@@ -130,7 +131,7 @@ class CurrentRead:
+     def __init__(self, part, transport, clock, refresh_seconds):
+         self.part, self.transport, self.clock = part, transport, clock
+         self.refresh_seconds = refresh_seconds
+-        self.value = self.last_success = self.last_attempt = None
++        self.value = self.last_success = self.last_attempt = self.retry_at = None
+         self.lock = threading.Lock()
+ 
+     def snapshot(self):
+@@ -145,8 +146,16 @@ class CurrentRead:
                      if not isinstance(value, dict) or not isinstance(value.get(field), list):
                          raise VpsUnavailable('VPS-Antwort unvollständig')
                      self.value, self.last_success = value, now
 -                except OSError:
 -                    pass
 +                except OSError as error:
++                    # The background retry counts 30 s from the end of the failed read.
++                    self.retry_at = self.clock() + 30
 +                    # Recorded in the dated reader log; the cause names the transport step, never the key.
 +                    cause = error.__cause__ or error
-+                    print(f'{datetime.now(timezone.utc).isoformat()} current {self.part} refresh failed: '
-+                          f'{type(cause).__name__}: {str(cause)[:300]}', file=sys.stderr, flush=True)
++                    try:
++                        print(f'{datetime.now(timezone.utc).isoformat()} current {self.part} refresh failed: '
++                              f'{type(cause).__name__}: {str(cause)[:300]}', file=sys.stderr, flush=True)
++                    except OSError:
++                        pass
              if self.value is None or now - self.last_success > 7 * 86400:
                  self.value = None
                  raise VpsUnavailable('Noch kein erreichbarer VPS-Datenstand')
-@@ -156,6 +160,15 @@ class CurrentRead:
+@@ -156,6 +165,15 @@ class CurrentRead:
                  last_attempt_at=datetime.fromtimestamp(self.last_attempt, timezone.utc).isoformat(),
                  client_location='MAC', transport='AUTOMATIC_SSH_READ'))
  
@@ -34,13 +48,13 @@ index 74ebc32..6b9bf91 100644
 +        with self.lock:
 +            if self.last_attempt is None:
 +                return 0.0
-+            interval = 30 if self.last_attempt != self.last_success else self.refresh_seconds
-+            return min(self.refresh_seconds, max(1.0, self.last_attempt + interval - self.clock()))
++            due = self.retry_at if self.last_attempt != self.last_success else self.last_attempt + self.refresh_seconds
++            return min(self.refresh_seconds, max(1.0, due - self.clock()))
 +
  
  class MacBackend:
      def __init__(self, settings, transport=None, clock=time.time):
-@@ -254,7 +267,7 @@ def main():
+@@ -254,7 +272,7 @@ def main():
                          path.unlink()
                  except OSError:
                      pass
